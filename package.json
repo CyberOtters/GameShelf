@@ -14,9 +14,11 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "@better-auth/prisma-adapter": "^1.6.24",
     "@prisma/adapter-pg": "^7.9.0",
     "@prisma/cli": "^3.0.0-beta.29",
     "@prisma/client": "^7.9.0",
+    "better-auth": "^1.6.24",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "pg": "^8.22.0"

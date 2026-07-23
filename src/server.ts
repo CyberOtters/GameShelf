@@ -1,18 +1,24 @@
 import "dotenv/config";
 import express from "express";
-import pg from "pg";
-import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "../generated/prisma/client.js";
-
-const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
+import { fromNodeHeaders, toNodeHandler } from "better-auth/node";
+import { auth } from "./lib/auth.js";
+import { prisma } from "./lib/prisma.js";
 
 const app = express();
 const port = process.env.PORT ?? 3000;
 
+app.all("/api/auth/*splat", toNodeHandler(auth));
+app.use(express.json());
+
 app.get("/", (_req, res) => {
   res.send("🎮 Hello World from GameShelf!!!");
+});
+
+app.get("/api/me", async (req, res) => {
+  const session = await auth.api.getSession({
+    headers: fromNodeHeaders(req.headers),
+  });
+  res.json(session);
 });
 
 // quick sanity check that Prisma + Postgres are wired up
