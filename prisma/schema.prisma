@@ -1,0 +1,60 @@
+// GameShelf schema — see project-plan.md §6
+// (plan targets MySQL; adapted here for Postgres + Prisma)
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum GameStatus {
+  BACKLOG
+  PLAYING
+  COMPLETED
+  DROPPED
+}
+
+enum Priority {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+model Game {
+  id       Int           @id @default(autoincrement())
+  userName String        @map("user_name") @db.VarChar(50)
+  title    String        @db.VarChar(100)
+  platform String        @db.VarChar(30)
+  status   GameStatus    @default(BACKLOG)
+  rating   Int?          @db.SmallInt
+  coverUrl String?       @map("cover_url") @db.VarChar(255)
+  addedAt  DateTime      @default(now()) @map("added_at")
+  sessions PlaySession[]
+
+  @@map("games")
+}
+
+model PlaySession {
+  id          Int      @id @default(autoincrement())
+  gameId      Int      @map("game_id")
+  hours       Decimal  @db.Decimal(4, 1)
+  sessionDate DateTime @map("session_date") @db.Date
+  notes       String?
+  game        Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@map("play_sessions")
+}
+
+model WishlistItem {
+  id         Int      @id @default(autoincrement())
+  userName   String   @map("user_name") @db.VarChar(50)
+  title      String   @db.VarChar(100)
+  priority   Priority @default(MEDIUM)
+  priceLimit Decimal? @map("price_limit") @db.Decimal(6, 2)
+  savedAt    DateTime @default(now()) @map("saved_at")
+
+  @@map("wishlist")
+}
