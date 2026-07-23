@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GameShelf — Player Start</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎮</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Karla:ital,wght@0,400;0,600;0,800;1,400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #1a1512;
+      --paper: #faf1de;
+      --card: #fffaf0;
+      --tomato: #ff5d40;
+      --teal: #1fa596;
+      --gold: #ffc53d;
+      --shadow: 6px 6px 0 var(--ink);
+      --shadow-sm: 3px 3px 0 var(--ink);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Karla", sans-serif;
+      color: var(--ink);
+      background-color: var(--paper);
+      background-image:
+        radial-gradient(var(--ink) 1px, transparent 1.4px);
+      background-size: 26px 26px;
+      background-position: 0 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 2rem 1rem;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* faded dot grid — soften the pattern */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: var(--paper);
+      opacity: 0.88;
+      pointer-events: none;
+    }
+
+    /* floating deco shapes */
+    .deco {
+      position: fixed;
+      font-family: "Bungee", cursive;
+      font-size: clamp(3rem, 8vw, 6rem);
+      opacity: 0.14;
+      pointer-events: none;
+      user-select: none;
+      animation: bob 6s ease-in-out infinite;
+    }
+    .deco.d1 { top: 8%; left: 6%; rotate: -12deg; animation-delay: 0s; }
+    .deco.d2 { bottom: 10%; right: 7%; rotate: 9deg; animation-delay: -2s; }
+    .deco.d3 { top: 14%; right: 12%; rotate: 6deg; font-size: clamp(2rem, 5vw, 3.5rem); animation-delay: -4s; }
+    .deco.d4 { bottom: 16%; left: 10%; rotate: -7deg; font-size: clamp(2rem, 5vw, 3.5rem); animation-delay: -3s; }
+
+    @keyframes bob {
+      0%, 100% { translate: 0 0; }
+      50% { translate: 0 -14px; }
+    }
+
+    .stage {
+      position: relative;
+      width: min(420px, 100%);
+      animation: drop-in 0.55s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+    }
+
+    @keyframes drop-in {
+      from { translate: 0 -40px; opacity: 0; }
+      to { translate: 0 0; opacity: 1; }
+    }
+
+    .logo {
+      text-align: center;
+      margin-bottom: 1.6rem;
+      animation: drop-in 0.55s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+    }
+    .logo h1 {
+      font-family: "Bungee", cursive;
+      font-size: clamp(2rem, 7vw, 2.6rem);
+      letter-spacing: 0.02em;
+      line-height: 1;
+      text-shadow: 3px 3px 0 var(--gold);
+    }
+    .logo h1 .accent { color: var(--tomato); text-shadow: 3px 3px 0 var(--ink); }
+    .logo p {
+      margin-top: 0.55rem;
+      font-weight: 600;
+      font-size: 0.85rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+    }
+
+    /* cartridge card */
+    .card {
+      background: var(--card);
+      border: 3px solid var(--ink);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      animation: drop-in 0.55s 0.08s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+    }
+
+    /* cartridge top ridges */
+    .ridges {
+      display: flex;
+      gap: 6px;
+      padding: 10px 14px;
+      background: var(--teal);
+      border-bottom: 3px solid var(--ink);
+    }
+    .ridges span {
+      flex: 1;
+      height: 8px;
+      background: var(--card);
+      border: 2px solid var(--ink);
+      border-radius: 4px;
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border-bottom: 3px solid var(--ink);
+    }
+    .tabs button {
+      font-family: "Bungee", cursive;
+      font-size: 0.95rem;
+      padding: 0.9rem 0.5rem;
+      background: var(--card);
+      color: var(--ink);
+      border: none;
+      cursor: pointer;
+      opacity: 0.45;
+      transition: opacity 0.15s, background 0.15s;
+    }
+    .tabs button + button { border-left: 3px solid var(--ink); }
+    .tabs button.active {
+      opacity: 1;
+      background: var(--gold);
+    }
+    .tabs button:hover:not(.active) { opacity: 0.75; }
+
+    form { padding: 1.6rem 1.5rem 1.7rem; display: grid; gap: 1.05rem; }
+    form[hidden] { display: none; }
+
+    .field { display: grid; gap: 0.35rem; }
+    .field label {
+      font-weight: 800;
+      font-size: 0.78rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .field input {
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 600;
+      padding: 0.7rem 0.85rem;
+      border: 2.5px solid var(--ink);
+      border-radius: 10px;
+      background: #fff;
+      box-shadow: var(--shadow-sm);
+      transition: translate 0.12s, box-shadow 0.12s;
+      outline: none;
+    }
+    .field input:focus {
+      translate: -2px -2px;
+      box-shadow: 5px 5px 0 var(--teal);
+    }
+
+    .submit {
+      font-family: "Bungee", cursive;
+      font-size: 1.05rem;
+      padding: 0.85rem;
+      margin-top: 0.3rem;
+      color: var(--card);
+      background: var(--tomato);
+      border: 3px solid var(--ink);
+      border-radius: 12px;
+      box-shadow: var(--shadow-sm);
+      cursor: pointer;
+      transition: translate 0.1s, box-shadow 0.1s;
+    }
+    .submit:hover { translate: -2px -2px; box-shadow: 5px 5px 0 var(--ink); }
+    .submit:active { translate: 3px 3px; box-shadow: 0 0 0 var(--ink); }
+    .submit:disabled {
+      opacity: 0.6;
+      cursor: wait;
+      translate: 0 0;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .msg {
+      font-weight: 600;
+      font-size: 0.9rem;
+      padding: 0.65rem 0.85rem;
+      border: 2.5px solid var(--ink);
+      border-radius: 10px;
+      display: none;
+      animation: drop-in 0.3s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+    }
+    .msg.error { display: block; background: #ffd9d2; }
+    .msg.ok { display: block; background: #d2f5ef; }
+
+    .foot {
+      text-align: center;
+      margin-top: 1.3rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      animation: drop-in 0.55s 0.16s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+    }
+    .foot a { color: var(--ink); }
+  </style>
+</head>
+<body>
+  <span class="deco d1">A</span>
+  <span class="deco d2">B</span>
+  <span class="deco d3">↑↑↓↓</span>
+  <span class="deco d4">←→←→</span>
+
+  <main class="stage">
+    <header class="logo">
+      <h1>GAME<span class="accent">SHELF</span></h1>
+      <p>Press start to continue</p>
+    </header>
+
+    <section class="card">
+      <div class="ridges" aria-hidden="true">
+        <span></span><span></span><span></span><span></span>
+      </div>
+
+      <div class="tabs" role="tablist">
+        <button type="button" id="tab-login" class="active" aria-selected="true">Sign In</button>
+        <button type="button" id="tab-register" aria-selected="false">Sign Up</button>
+      </div>
+
+      <form id="form-login">
+        <div class="msg" role="alert"></div>
+        <div class="field">
+          <label for="li-email">Email</label>
+          <input id="li-email" type="email" autocomplete="email" required placeholder="player1@example.com" />
+        </div>
+        <div class="field">
+          <label for="li-password">Password</label>
+          <input id="li-password" type="password" autocomplete="current-password" required placeholder="••••••••" />
+        </div>
+        <button class="submit" type="submit">Insert Coin</button>
+      </form>
+
+      <form id="form-register" hidden>
+        <div class="msg" role="alert"></div>
+        <div class="field">
+          <label for="re-name">Player Name</label>
+          <input id="re-name" type="text" autocomplete="name" required placeholder="Player One" />
+        </div>
+        <div class="field">
+          <label for="re-email">Email</label>
+          <input id="re-email" type="email" autocomplete="email" required placeholder="player1@example.com" />
+        </div>
+        <div class="field">
+          <label for="re-password">Password</label>
+          <input id="re-password" type="password" autocomplete="new-password" required minlength="8" placeholder="8+ characters" />
+        </div>
+        <button class="submit" type="submit">New Game</button>
+      </form>
+    </section>
+
+    <p class="foot"><a href="/">← Back to the shelf</a></p>
+  </main>
+
+  <script>
+    const tabLogin = document.getElementById("tab-login");
+    const tabRegister = document.getElementById("tab-register");
+    const formLogin = document.getElementById("form-login");
+    const formRegister = document.getElementById("form-register");
+
+    function showTab(which) {
+      const login = which === "login";
+      tabLogin.classList.toggle("active", login);
+      tabRegister.classList.toggle("active", !login);
+      tabLogin.setAttribute("aria-selected", login);
+      tabRegister.setAttribute("aria-selected", !login);
+      formLogin.hidden = !login;
+      formRegister.hidden = login;
+      history.replaceState(null, "", login ? "/login" : "/register");
+    }
+
+    tabLogin.addEventListener("click", () => showTab("login"));
+    tabRegister.addEventListener("click", () => showTab("register"));
+    if (location.pathname === "/register") showTab("register");
+
+    async function submit(form, url, body, okText) {
+      const msg = form.querySelector(".msg");
+      const button = form.querySelector(".submit");
+      msg.className = "msg";
+      button.disabled = true;
+      try {
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.message || "Something went wrong. Try again.");
+        }
+        msg.textContent = okText;
+        msg.classList.add("ok");
+        setTimeout(() => (location.href = "/"), 600);
+      } catch (err) {
+        msg.textContent = err.message;
+        msg.classList.add("error");
+        button.disabled = false;
+      }
+    }
+
+    formLogin.addEventListener("submit", (e) => {
+      e.preventDefault();
+      submit(formLogin, "/api/auth/sign-in/email", {
+        email: document.getElementById("li-email").value,
+        password: document.getElementById("li-password").value,
+      }, "Welcome back! Loading save file…");
+    });
+
+    formRegister.addEventListener("submit", (e) => {
+      e.preventDefault();
+      submit(formRegister, "/api/auth/sign-up/email", {
+        name: document.getElementById("re-name").value,
+        email: document.getElementById("re-email").value,
+        password: document.getElementById("re-password").value,
+      }, "Account created! Starting new game…");
+    });
+  </script>
+</body>
+</html>

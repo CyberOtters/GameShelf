@@ -1,4 +1,5 @@
 import "dotenv/config";
+import path from "node:path";
 import express from "express";
 import { fromNodeHeaders, toNodeHandler } from "better-auth/node";
 import { auth } from "./lib/auth.js";
@@ -6,12 +7,24 @@ import { prisma } from "./lib/prisma.js";
 
 const app = express();
 const port = process.env.PORT ?? 3000;
+const authPage = path.resolve(import.meta.dirname, "../public/auth.html");
 
 app.all("/api/auth/*splat", toNodeHandler(auth));
 app.use(express.json());
 
-app.get("/", (_req, res) => {
-  res.send("🎮 Hello World from GameShelf!!!");
+app.get(["/login", "/register"], (_req, res) => {
+  res.sendFile(authPage);
+});
+
+app.get("/", async (req, res) => {
+  const session = await auth.api.getSession({
+    headers: fromNodeHeaders(req.headers),
+  });
+  if (session) {
+    res.send(`🎮 Welcome back to GameShelf, ${session.user.name}!`);
+  } else {
+    res.send('🎮 Hello World from GameShelf!!! <a href="/login">Sign in</a>');
+  }
 });
 
 app.get("/api/me", async (req, res) => {
