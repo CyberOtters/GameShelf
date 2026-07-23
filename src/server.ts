@@ -7,24 +7,17 @@ import { prisma } from "./lib/prisma.js";
 
 const app = express();
 const port = process.env.PORT ?? 3000;
-const authPage = path.resolve(import.meta.dirname, "../public/auth.html");
+const publicDir = path.resolve(import.meta.dirname, "../public");
 
 app.all("/api/auth/*splat", toNodeHandler(auth));
 app.use(express.json());
 
 app.get(["/login", "/register"], (_req, res) => {
-  res.sendFile(authPage);
+  res.sendFile(path.join(publicDir, "auth.html"));
 });
 
-app.get("/", async (req, res) => {
-  const session = await auth.api.getSession({
-    headers: fromNodeHeaders(req.headers),
-  });
-  if (session) {
-    res.send(`🎮 Welcome back to GameShelf, ${session.user.name}!`);
-  } else {
-    res.send('🎮 Hello World from GameShelf!!! <a href="/login">Sign in</a>');
-  }
+app.get("/", (_req, res) => {
+  res.sendFile(path.join(publicDir, "index.html"));
 });
 
 app.get("/api/me", async (req, res) => {
