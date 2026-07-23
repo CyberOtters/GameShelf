@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "deploy:prod": "dotenvx run -- bunx @prisma/cli@latest app deploy --prod --entry src/server.ts",
     "dev": "tsx watch src/server.ts",
     "start": "tsx src/server.ts"
   },
@@ -21,6 +22,7 @@
     "pg": "^8.22.0"
   },
   "devDependencies": {
+    "@dotenvx/dotenvx": "^2.17.2",
     "@types/express": "^5.0.6",
     "@types/node": "^26.1.1",
     "prisma": "^7.9.0",
