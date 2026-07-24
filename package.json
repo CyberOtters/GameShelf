@@ -10,7 +10,7 @@
     "dev:server": "tsx watch src/server/index.ts",
     "dev:css": "sass --watch src/client:dist/client/assets",
     "dev:js": "node esbuild.config.js --client --watch",
-    "build": "npm run build:client && npm run build:server",
+    "build": "prisma generate && npm run build:client && npm run build:server",
     "build:client": "rm -rf dist/client && sass src/client:dist/client/assets --no-source-map && node esbuild.config.js --client",
     "build:server": "node esbuild.config.js --server && rm -rf dist/views && cp -R src/server/views dist/views && rm -rf dist/public && cp -R public dist/public",
     "typecheck": "tsc --noEmit && tsc --noEmit -p src/client",
