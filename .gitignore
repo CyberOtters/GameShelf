@@ -149,3 +149,6 @@ vite.config.ts.timestamp-*
 generated/
 
 .DS_Store
+
+# Prisma Compute deploy env (contains secrets)
+deploy.env

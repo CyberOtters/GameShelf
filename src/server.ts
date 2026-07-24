@@ -1,5 +1,6 @@
 import "dotenv/config";
 import path from "node:path";
+import { existsSync } from "node:fs";
 import express from "express";
 import { fromNodeHeaders, toNodeHandler } from "better-auth/node";
 import { auth } from "./lib/auth.js";
@@ -7,9 +8,14 @@ import { prisma } from "./lib/prisma.js";
 
 const app = express();
 const port = process.env.PORT ?? 3000;
-// Built by `npm run build` (Vite). In dev the client is served by `vite` on :5173,
-// which proxies /api and /games back here.
-const clientDir = path.resolve(import.meta.dirname, "../dist/client");
+// Built by `npm run build`. Deployed, this file is the bundle at dist/server.js and
+// the client sits beside it; from source it is src/server.ts and the client is in
+// dist/. In dev nothing is served from here — vite owns :5173 and proxies back.
+const clientCandidates = [
+  path.resolve(import.meta.dirname, "client"),
+  path.resolve(import.meta.dirname, "../dist/client"),
+];
+const clientDir = clientCandidates.find(existsSync) ?? clientCandidates[1];
 
 app.all("/api/auth/*splat", toNodeHandler(auth));
 app.use(express.json());
