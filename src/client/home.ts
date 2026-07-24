@@ -32,7 +32,11 @@ async function render() {
     title.textContent = "Player Card";
 
     const badge = el("div", "badge");
-    const avatar = el("div", "avatar", (name || "?").trim().charAt(0).toUpperCase());
+    const avatar = el(
+      "div",
+      "avatar",
+      (name || "?").trim().charAt(0).toUpperCase(),
+    );
     const who = el("div", "who");
     who.append(el("span", "label", "Now playing"), el("span", "name", name));
     badge.append(avatar, who);
