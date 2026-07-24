@@ -9,10 +9,10 @@
     "dev": "concurrently -n server,css,js -c blue,yellow,magenta \"npm:dev:server\" \"npm:dev:css\" \"npm:dev:js\"",
     "dev:server": "PORT=3000 tsx watch src/server/index.ts",
     "dev:css": "sass --watch src/client:dist/client/assets",
-    "dev:js": "esbuild src/client/home.ts src/client/auth.ts --bundle --format=esm --sourcemap --outdir=dist/client/assets --watch",
+    "dev:js": "node esbuild.config.js --client --watch",
     "build": "npm run build:client && npm run build:server",
-    "build:client": "rm -rf dist/client && sass src/client:dist/client/assets --no-source-map && esbuild src/client/home.ts src/client/auth.ts --bundle --format=esm --minify --outdir=dist/client/assets",
-    "build:server": "esbuild src/server/index.ts --bundle --platform=node --format=esm --outfile=dist/server.js --banner:js=\"import{createRequire}from'node:module';const require=createRequire(import.meta.url);\" && rm -rf dist/views && cp -R src/server/views dist/views",
+    "build:client": "rm -rf dist/client && sass src/client:dist/client/assets --no-source-map && node esbuild.config.js --client",
+    "build:server": "node esbuild.config.js --server && rm -rf dist/views && cp -R src/server/views dist/views",
     "typecheck": "tsc --noEmit && tsc --noEmit -p src/client",
     "start": "tsx src/server/index.ts"
   },
