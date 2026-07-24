@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GameShelf — Player Start</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎮</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Karla:ital,wght@0,400;0,600;0,800;1,400&display=swap" rel="stylesheet" />
+  <script type="module" src="/src/auth.ts"></script>
+</head>
+<body>
+  <span class="deco d1">A</span>
+  <span class="deco d2">B</span>
+  <span class="deco d3">↑↑↓↓</span>
+  <span class="deco d4">←→←→</span>
+
+  <main class="stage">
+    <header class="logo">
+      <h1>GAME<span class="accent">SHELF</span></h1>
+      <p>Press start to continue</p>
+    </header>
+
+    <section class="card">
+      <div class="ridges" aria-hidden="true">
+        <span></span><span></span><span></span><span></span>
+      </div>
+
+      <div class="tabs" role="tablist">
+        <button type="button" id="tab-login" class="active" aria-selected="true">Sign In</button>
+        <button type="button" id="tab-register" aria-selected="false">Sign Up</button>
+      </div>
+
+      <form id="form-login">
+        <div class="msg" role="alert"></div>
+        <div class="field">
+          <label for="li-email">Email</label>
+          <input id="li-email" type="email" autocomplete="email" required placeholder="player1@example.com" />
+        </div>
+        <div class="field">
+          <label for="li-password">Password</label>
+          <input id="li-password" type="password" autocomplete="current-password" required placeholder="••••••••" />
+        </div>
+        <button class="submit" type="submit">Insert Coin</button>
+      </form>
+
+      <form id="form-register" hidden>
+        <div class="msg" role="alert"></div>
+        <div class="field">
+          <label for="re-name">Player Name</label>
+          <input id="re-name" type="text" autocomplete="name" required placeholder="Player One" />
+        </div>
+        <div class="field">
+          <label for="re-email">Email</label>
+          <input id="re-email" type="email" autocomplete="email" required placeholder="player1@example.com" />
+        </div>
+        <div class="field">
+          <label for="re-password">Password</label>
+          <input id="re-password" type="password" autocomplete="new-password" required minlength="8" placeholder="8+ characters" />
+        </div>
+        <button class="submit" type="submit">New Game</button>
+      </form>
+    </section>
+
+    <p class="foot"><a href="/">← Back to the shelf</a></p>
+  </main>
+</body>
+</html>

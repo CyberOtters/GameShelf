@@ -7,17 +7,16 @@ import { prisma } from "./lib/prisma.js";
 
 const app = express();
 const port = process.env.PORT ?? 3000;
-const publicDir = path.resolve(import.meta.dirname, "../public");
+// Built by `npm run build` (Vite). In dev the client is served by `vite` on :5173,
+// which proxies /api and /games back here.
+const clientDir = path.resolve(import.meta.dirname, "../dist/client");
 
 app.all("/api/auth/*splat", toNodeHandler(auth));
 app.use(express.json());
+app.use(express.static(clientDir));
 
 app.get(["/login", "/register"], (_req, res) => {
-  res.sendFile(path.join(publicDir, "auth.html"));
-});
-
-app.get("/", (_req, res) => {
-  res.sendFile(path.join(publicDir, "index.html"));
+  res.sendFile(path.join(clientDir, "auth.html"));
 });
 
 app.get("/api/me", async (req, res) => {
