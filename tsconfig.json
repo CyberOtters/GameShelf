@@ -6,7 +6,13 @@
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "outDir": "dist"
+    "outDir": "dist",
+    "noImplicitAny": false
   },
-  "include": ["src/server", "prisma.config.ts", "vite.config.ts", "prisma.compute.ts"]
+  "include": [
+    "src/server",
+    "prisma.config.ts",
+    "vite.config.ts",
+    "prisma.compute.ts"
+  ]
 }
