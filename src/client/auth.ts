@@ -1,6 +1,3 @@
-import "./shared.scss";
-import "./auth.scss";
-
 const tabLogin = document.getElementById("tab-login") as HTMLButtonElement;
 const tabRegister = document.getElementById("tab-register") as HTMLButtonElement;
 const formLogin = document.getElementById("form-login") as HTMLFormElement;

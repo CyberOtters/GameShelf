@@ -6,12 +6,13 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "deploy": "dotenvx run -f deploy.env -- bunx @prisma/cli@latest app deploy --db --env deploy.env",
-    "dev": "concurrently -n server,client -c blue,magenta \"npm:dev:server\" \"npm:dev:client\"",
-    "dev:server": "PORT=3000 NODE_ENV=development tsx watch src/server/index.ts",
-    "dev:client": "vite",
+    "dev": "concurrently -n server,css,js -c blue,yellow,magenta \"npm:dev:server\" \"npm:dev:css\" \"npm:dev:js\"",
+    "dev:server": "PORT=3000 tsx watch src/server/index.ts",
+    "dev:css": "sass --watch src/client:dist/client/assets",
+    "dev:js": "esbuild src/client/home.ts src/client/auth.ts --bundle --format=esm --sourcemap --outdir=dist/client/assets --watch",
     "build": "npm run build:client && npm run build:server",
-    "build:client": "vite build",
-    "build:server": "esbuild src/server/index.ts --bundle --platform=node --format=esm --outfile=dist/server.js --banner:js=\"import{createRequire}from'node:module';const require=createRequire(import.meta.url);\" && cp -R src/server/views dist/views",
+    "build:client": "rm -rf dist/client && sass src/client:dist/client/assets --no-source-map && esbuild src/client/home.ts src/client/auth.ts --bundle --format=esm --minify --outdir=dist/client/assets",
+    "build:server": "esbuild src/server/index.ts --bundle --platform=node --format=esm --outfile=dist/server.js --banner:js=\"import{createRequire}from'node:module';const require=createRequire(import.meta.url);\" && rm -rf dist/views && cp -R src/server/views dist/views",
     "typecheck": "tsc --noEmit && tsc --noEmit -p src/client",
     "start": "tsx src/server/index.ts"
   },
@@ -41,7 +42,6 @@
     "prisma": "^7.9.0",
     "sass": "^1.101.7",
     "tsx": "^4.23.1",
-    "typescript": "^7.0.2",
-    "vite": "^8.1.5"
+    "typescript": "^7.0.2"
   }
 }
