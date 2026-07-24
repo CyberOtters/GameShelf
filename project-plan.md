@@ -13,7 +13,7 @@ GameShelf is currently a **backend-first TypeScript app** using **Express + Pris
 
 ### What is implemented now
 
-- Express server in `src/server.ts`
+- Express server in `src/server/index.ts`
 - Prisma schema and migration for the three core tables:
   - `games`
   - `play_sessions`

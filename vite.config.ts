@@ -1,7 +1,7 @@
 import path from "node:path";
 import { defineConfig, type Plugin } from "vite";
 
-const clientDir = path.resolve(import.meta.dirname, "client");
+const clientDir = path.resolve(import.meta.dirname, "src/client");
 
 // Express serves auth.html at /login and /register; mirror those URLs in the
 // dev server so both entry points behave the same on :5173 and in production.

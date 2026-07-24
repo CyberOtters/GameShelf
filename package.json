@@ -7,13 +7,13 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "deploy": "dotenvx run -f deploy.env -- bunx @prisma/cli@latest app deploy --db --env deploy.env",
     "dev": "concurrently -n server,client -c blue,magenta \"npm:dev:server\" \"npm:dev:client\"",
-    "dev:server": "PORT=3000 tsx watch src/server.ts",
+    "dev:server": "PORT=3000 tsx watch src/server/index.ts",
     "dev:client": "vite",
     "build": "npm run build:client && npm run build:server",
     "build:client": "vite build",
-    "build:server": "esbuild src/server.ts --bundle --platform=node --format=esm --outfile=dist/server.js --banner:js=\"import{createRequire}from'node:module';const require=createRequire(import.meta.url);\"",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p client",
-    "start": "tsx src/server.ts"
+    "build:server": "esbuild src/server/index.ts --bundle --platform=node --format=esm --outfile=dist/server.js --banner:js=\"import{createRequire}from'node:module';const require=createRequire(import.meta.url);\"",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p src/client",
+    "start": "tsx src/server/index.ts"
   },
   "keywords": [],
   "author": "",

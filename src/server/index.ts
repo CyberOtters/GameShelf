@@ -9,11 +9,11 @@ import { prisma } from "./lib/prisma.js";
 const app = express();
 const port = process.env.PORT ?? 3000;
 // Built by `npm run build`. Deployed, this file is the bundle at dist/server.js and
-// the client sits beside it; from source it is src/server.ts and the client is in
-// dist/. In dev nothing is served from here — vite owns :5173 and proxies back.
+// the client sits beside it; from source it is src/server/index.ts and the client is
+// in dist/. In dev nothing is served from here — vite owns :5173 and proxies back.
 const clientCandidates = [
   path.resolve(import.meta.dirname, "client"),
-  path.resolve(import.meta.dirname, "../dist/client"),
+  path.resolve(import.meta.dirname, "../../dist/client"),
 ];
 const clientDir = clientCandidates.find(existsSync) ?? clientCandidates[1];
 
