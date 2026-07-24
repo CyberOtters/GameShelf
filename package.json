@@ -12,7 +12,7 @@
     "dev:js": "node esbuild.config.js --client --watch",
     "build": "npm run build:client && npm run build:server",
     "build:client": "rm -rf dist/client && sass src/client:dist/client/assets --no-source-map && node esbuild.config.js --client",
-    "build:server": "node esbuild.config.js --server && rm -rf dist/views && cp -R src/server/views dist/views",
+    "build:server": "node esbuild.config.js --server && rm -rf dist/views && cp -R src/server/views dist/views && rm -rf dist/public && cp -R public dist/public",
     "typecheck": "tsc --noEmit && tsc --noEmit -p src/client",
     "start": "tsx src/server/index.ts"
   },

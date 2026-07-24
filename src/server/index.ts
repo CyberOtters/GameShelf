@@ -1,6 +1,5 @@
 import "dotenv/config";
 import path from "node:path";
-import { existsSync } from "node:fs";
 import express from "express";
 import ejs from "ejs";
 import { fromNodeHeaders, toNodeHandler } from "better-auth/node";
@@ -17,6 +16,11 @@ console.log(
 const clientDir = isDev
   ? path.resolve(import.meta.dirname, "../../dist/client")
   : path.resolve(import.meta.dirname, "client");
+// Static files (favicon.ico, etc.). From the project root in dev; `build:server`
+// copies public/ next to the bundle for production.
+const publicDir = isDev
+  ? path.resolve(import.meta.dirname, "../../public")
+  : path.resolve(import.meta.dirname, "public");
 // EJS views ship beside the server: src/server/views from source, dist/views once
 // `build:server` copies them next to the bundle.
 app.engine("ejs", ejs.renderFile);
@@ -25,6 +29,7 @@ app.set("views", path.resolve(import.meta.dirname, "views"));
 
 app.all("/api/auth/*splat", toNodeHandler(auth));
 app.use(express.json());
+app.use(express.static(publicDir));
 app.use(express.static(clientDir));
 
 app.get("/", (_req, res) => {
