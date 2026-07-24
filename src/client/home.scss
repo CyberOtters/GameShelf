@@ -1,8 +1,11 @@
+@use "tokens" as *;
+
 .stage {
-  opacity: 0; /* hidden until session check resolves */
-}
-.stage.ready {
-  animation: drop-in 0.55s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+  opacity: 0; // hidden until session check resolves
+
+  &.ready {
+    animation: drop-in $drop-in both;
+  }
 }
 
 .card-title {
@@ -14,14 +17,19 @@
   border-bottom: 3px solid var(--ink);
 }
 
-.card-body { padding: 1.6rem 1.5rem 1.7rem; display: grid; gap: 1.05rem; }
+.card-body {
+  padding: 1.6rem 1.5rem 1.7rem;
+  display: grid;
+  gap: 1.05rem;
+}
 
-/* player badge */
+// player badge
 .badge {
   display: flex;
   align-items: center;
   gap: 0.9rem;
 }
+
 .avatar {
   font-family: "Bungee", cursive;
   font-size: 1.5rem;
@@ -36,19 +44,25 @@
   place-items: center;
   flex-shrink: 0;
 }
-.who { display: grid; gap: 0.15rem; min-width: 0; }
-.who .label {
-  font-weight: 800;
-  font-size: 0.7rem;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--teal);
-}
-.who .name {
-  font-family: "Bungee", cursive;
-  font-size: 1.15rem;
-  line-height: 1.15;
-  overflow-wrap: anywhere;
+
+.who {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+
+  .label {
+    font-weight: 800;
+    font-size: 0.7rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--teal);
+  }
+  .name {
+    font-family: "Bungee", cursive;
+    font-size: 1.15rem;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+  }
 }
 
 .stat {
@@ -59,17 +73,18 @@
   border: 2.5px solid var(--ink);
   border-radius: 10px;
   box-shadow: var(--shadow-sm);
-}
-.stat .label {
-  font-weight: 800;
-  font-size: 0.72rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-.stat .value {
-  font-weight: 600;
-  font-size: 1rem;
-  overflow-wrap: anywhere;
+
+  .label {
+    font-weight: 800;
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .value {
+    font-weight: 600;
+    font-size: 1rem;
+    overflow-wrap: anywhere;
+  }
 }
 
 .btn {
@@ -85,9 +100,10 @@
   border: 3px solid var(--ink);
   border-radius: 12px;
   box-shadow: var(--shadow-sm);
-  cursor: pointer;
-  transition: translate 0.1s, box-shadow 0.1s;
+  @include pressable;
+
+  &.ghost {
+    color: var(--ink);
+    background: var(--card);
+  }
 }
-.btn:hover { translate: -2px -2px; box-shadow: 5px 5px 0 var(--ink); }
-.btn:active { translate: 3px 3px; box-shadow: 0 0 0 var(--ink); }
-.btn.ghost { color: var(--ink); background: var(--card); }

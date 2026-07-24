@@ -1,5 +1,5 @@
-import "./shared.css";
-import "./home.css";
+import "./shared.scss";
+import "./home.scss";
 
 type Session = {
   user?: { name: string; email: string };

@@ -1,0 +1,151 @@
+@use "tokens" as *;
+
+:root {
+  --ink: #1a1512;
+  --paper: #faf1de;
+  --card: #fffaf0;
+  --tomato: #ff5d40;
+  --teal: #1fa596;
+  --gold: #ffc53d;
+  --shadow: 6px 6px 0 var(--ink);
+  --shadow-sm: 3px 3px 0 var(--ink);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: "Karla", sans-serif;
+  color: var(--ink);
+  background-color: var(--paper);
+  background-image: radial-gradient(var(--ink) 1px, transparent 1.4px);
+  background-size: 26px 26px;
+  background-position: 0 0;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 2rem 1rem;
+  position: relative;
+  overflow-x: hidden;
+
+  // faded dot grid — soften the pattern
+  &::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: var(--paper);
+    opacity: 0.88;
+    pointer-events: none;
+  }
+}
+
+// floating deco shapes
+.deco {
+  position: fixed;
+  font-family: "Bungee", cursive;
+  font-size: clamp(3rem, 8vw, 6rem);
+  opacity: 0.14;
+  pointer-events: none;
+  user-select: none;
+  animation: bob 6s ease-in-out infinite;
+
+  &.d1 {
+    top: 8%;
+    left: 6%;
+    rotate: -12deg;
+    animation-delay: 0s;
+  }
+  &.d2 {
+    bottom: 10%;
+    right: 7%;
+    rotate: 9deg;
+    animation-delay: -2s;
+  }
+  &.d3 {
+    top: 14%;
+    right: 12%;
+    rotate: 6deg;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    animation-delay: -4s;
+  }
+  &.d4 {
+    bottom: 16%;
+    left: 10%;
+    rotate: -7deg;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    animation-delay: -3s;
+  }
+}
+
+@keyframes bob {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -14px;
+  }
+}
+
+@keyframes drop-in {
+  from {
+    translate: 0 -40px;
+    opacity: 0;
+  }
+  to {
+    translate: 0 0;
+    opacity: 1;
+  }
+}
+
+.stage {
+  position: relative;
+  width: min(420px, 100%);
+}
+
+.logo {
+  text-align: center;
+  margin-bottom: 1.6rem;
+
+  h1 {
+    font-family: "Bungee", cursive;
+    font-size: clamp(2rem, 7vw, 2.6rem);
+    letter-spacing: 0.02em;
+    line-height: 1;
+    text-shadow: 3px 3px 0 var(--gold);
+
+    .accent {
+      color: var(--tomato);
+      text-shadow: 3px 3px 0 var(--ink);
+    }
+  }
+}
+
+// cartridge card
+.card {
+  background: var(--card);
+  border: 3px solid var(--ink);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+// cartridge top ridges
+.ridges {
+  display: flex;
+  gap: 6px;
+  padding: 10px 14px;
+  background: var(--teal);
+  border-bottom: 3px solid var(--ink);
+
+  span {
+    flex: 1;
+    height: 8px;
+    background: var(--card);
+    border: 2px solid var(--ink);
+    border-radius: 4px;
+  }
+}
