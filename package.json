@@ -6,8 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "deploy": "dotenvx run -f deploy.env -- bunx @prisma/cli@latest app deploy --db --env deploy.env",
-    "dev": "STAGE=development concurrently -n server,css,js -c blue,yellow,magenta \"npm:dev:server\" \"npm:dev:css\" \"npm:dev:js\"",
-    "dev:server": "PORT=3000 tsx watch src/server/index.ts",
+    "dev": "concurrently -n server,css,js -c blue,yellow,magenta \"npm:dev:server\" \"npm:dev:css\" \"npm:dev:js\"",
+    "dev:server": "tsx watch src/server/index.ts",
     "dev:css": "sass --watch src/client:dist/client/assets",
     "dev:js": "node esbuild.config.js --client --watch",
     "build": "npm run build:client && npm run build:server",

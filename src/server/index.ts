@@ -9,12 +9,14 @@ import { prisma } from "./lib/prisma.js";
 
 const app = express();
 const port = process.env.PORT ?? 3000;
+const isDev = process.env.STAGE === "development";
+console.log(
+  `GameShelf starting in ${isDev ? "development" : "production"} mode`,
+);
 
-const clientDir =
-  process.env.NODE_ENV === "development"
-    ? path.resolve(import.meta.dirname, "client")
-    : path.resolve(import.meta.dirname, "../../dist/client");
-
+const clientDir = isDev
+  ? path.resolve(import.meta.dirname, "../../dist/client")
+  : path.resolve(import.meta.dirname, "client");
 // EJS views ship beside the server: src/server/views from source, dist/views once
 // `build:server` copies them next to the bundle.
 app.engine("ejs", ejs.renderFile);
