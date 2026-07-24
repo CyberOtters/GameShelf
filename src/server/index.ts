@@ -10,15 +10,10 @@ import { prisma } from "./lib/prisma.js";
 const app = express();
 const port = process.env.PORT ?? 3000;
 
-// Built by `npm run build`. Deployed, this file is the bundle at dist/server.js and
-// the client sits beside it; from source it is src/server/index.ts and the client is
-// in dist/. The client assets (compiled by `build:client` with stable names) are
-// served from here in both dev and production.
-const clientCandidates = [
-  path.resolve(import.meta.dirname, "client"),
-  path.resolve(import.meta.dirname, "../../dist/client"),
-];
-const clientDir = clientCandidates.find(existsSync) ?? clientCandidates[1];
+const clientDir =
+  process.env.NODE_ENV === "development"
+    ? path.resolve(import.meta.dirname, "client")
+    : path.resolve(import.meta.dirname, "../../dist/client");
 
 // EJS views ship beside the server: src/server/views from source, dist/views once
 // `build:server` copies them next to the bundle.
@@ -32,13 +27,19 @@ app.use(express.static(clientDir));
 
 app.get("/", (_req, res) => {
   res.render("index", {
-    assets: { js: "/assets/home.js", css: ["/assets/shared.css", "/assets/home.css"] },
+    assets: {
+      js: "/assets/home.js",
+      css: ["/assets/shared.css", "/assets/home.css"],
+    },
   });
 });
 
 app.get(["/login", "/register"], (_req, res) => {
   res.render("auth", {
-    assets: { js: "/assets/auth.js", css: ["/assets/shared.css", "/assets/auth.css"] },
+    assets: {
+      js: "/assets/auth.js",
+      css: ["/assets/shared.css", "/assets/auth.css"],
+    },
   });
 });
 
