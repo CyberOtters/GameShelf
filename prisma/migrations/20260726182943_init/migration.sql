@@ -15,6 +15,8 @@ CREATE TABLE "Game" (
     "rating" SMALLINT,
     "coverUrl" VARCHAR(255),
     "addedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "wishlist" BOOLEAN NOT NULL DEFAULT false,
+    "notes" VARCHAR(500),
 
     CONSTRAINT "Game_pkey" PRIMARY KEY ("id")
 );
@@ -29,18 +31,6 @@ CREATE TABLE "PlaySession" (
     "notes" TEXT,
 
     CONSTRAINT "PlaySession_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "WishlistItem" (
-    "id" SERIAL NOT NULL,
-    "userId" TEXT NOT NULL,
-    "gameId" INTEGER NOT NULL,
-    "title" VARCHAR(100) NOT NULL,
-    "priceLimit" DECIMAL(6,2),
-    "savedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "WishlistItem_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -121,12 +111,6 @@ ALTER TABLE "PlaySession" ADD CONSTRAINT "PlaySession_gameId_fkey" FOREIGN KEY (
 
 -- AddForeignKey
 ALTER TABLE "PlaySession" ADD CONSTRAINT "PlaySession_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "WishlistItem" ADD CONSTRAINT "WishlistItem_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "WishlistItem" ADD CONSTRAINT "WishlistItem_gameId_fkey" FOREIGN KEY ("gameId") REFERENCES "Game"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Session" ADD CONSTRAINT "Session_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
