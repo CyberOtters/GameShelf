@@ -31,9 +31,11 @@ model Game {
   coverUrl String?    @db.VarChar(255)
   addedAt  DateTime   @default(now())
 
-  sessions      PlaySession[]
-  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  wishlistItems WishlistItem[]
+  wishlist Boolean @default(false)
+  notes    String? @db.VarChar(500)
+
+  sessions PlaySession[]
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model PlaySession {
@@ -48,17 +50,6 @@ model PlaySession {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-model WishlistItem {
-  id         Int      @id @default(autoincrement())
-  userId     String
-  gameId     Int
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  game       Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  title      String   @db.VarChar(100)
-  priceLimit Decimal? @db.Decimal(6, 2)
-  savedAt    DateTime @default(now())
-}
-
 model User {
   id            String   @id
   name          String
@@ -68,11 +59,10 @@ model User {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  sessions      Session[]
-  accounts      Account[]
-  games         Game[]
-  wishlistItems WishlistItem[]
-  playSessions  PlaySession[]
+  sessions     Session[]
+  accounts     Account[]
+  games        Game[]
+  playSessions PlaySession[]
 }
 
 model Session {
