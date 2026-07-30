@@ -8,6 +8,7 @@ datasource db {
 }
 
 enum GameStatus {
+  WISHLIST
   BACKLOG
   PLAYING
   COMPLETED
@@ -27,11 +28,11 @@ model Game {
   platform String     @db.VarChar(30)
   priority Priority?
   status   GameStatus @default(BACKLOG)
+  archived Boolean    @default(false)
   rating   Int?       @db.SmallInt
   coverUrl String?    @db.VarChar(255)
   addedAt  DateTime   @default(now())
 
-  wishlist Boolean @default(false)
   notes    String? @db.VarChar(500)
 
   sessions PlaySession[]
