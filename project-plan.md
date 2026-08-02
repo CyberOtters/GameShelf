@@ -20,24 +20,30 @@ GameShelf is currently a **full-stack TypeScript app** using **Express + EJS + P
 - Client-side TypeScript bundles for:
   - Home session UI (`src/client/home.ts`)
   - Login/register tab + form handling (`src/client/auth.ts`)
-- SCSS styling pipeline for shared, home, and auth styles
-- Better Auth integration with Prisma adapter (`src/server/lib/auth.ts`) and mounted auth endpoints (`/api/auth/*`)
+- SCSS styling pipeline: `shared.scss`, `home.scss`, `auth.scss`, plus the
+  `_tokens.scss` partial (imported, not emitted as its own CSS file)
+- Better Auth integration with the built-in Prisma adapter
+  (`prismaAdapter` from `better-auth/adapters/prisma`, wired in
+  `src/server/lib/auth.ts`) and mounted auth endpoints (`/api/auth/*`)
+- Email/password authentication enabled (`emailAndPassword.enabled`)
 - Session introspection endpoint (`GET /api/me`)
-- Prisma schema and migrations for the three core game tables:
-  - `games`
-  - `play_sessions`
-  - `wishlist`
+- Prisma schema and migrations for the two core game tables:
+  - `Game`
+  - `PlaySession`
 - Prisma schema and migration for auth tables:
-  - `user`
-  - `session`
-  - `account`
-  - `verification`
+  - `User`
+  - `Session`
+  - `Account`
+  - `Verification`
 - Enums for:
-  - `GameStatus` (`BACKLOG`, `PLAYING`, `COMPLETED`, `DROPPED`)
+  - `GameStatus` (`WISHLIST`, `BACKLOG`, `PLAYING`, `COMPLETED`, `DROPPED`)
   - `Priority` (`HIGH`, `MEDIUM`, `LOW`)
-- Working Prisma + Postgres connection via `@prisma/adapter-pg`
+- Wishlist is modeled as `GameStatus.WISHLIST` on `Game` (plus the nullable
+  `priority` column) rather than as a separate table
+- Working Prisma + Postgres connection via `pg` + `@prisma/adapter-pg`
 - Basic data route:
-  - `GET /games` returns `prisma.game.findMany()` JSON
+  - `GET /games` returns `prisma.game.findMany()` JSON (unfiltered — not yet
+    scoped to the signed-in user)
 - Build/deploy pipeline:
   - esbuild server/client bundling
   - Prisma generate on build
@@ -47,13 +53,17 @@ GameShelf is currently a **full-stack TypeScript app** using **Express + EJS + P
 
 - Game CRUD routes beyond `GET /games`
 - Play session CRUD routes
-- Wishlist CRUD routes
-- Auth-gated data ownership and per-user game/wishlist workflows
+- Wishlist workflows on top of `GameStatus.WISHLIST` / `priority`
+- Auth-gated data ownership — no route currently checks the session before
+  reading or writing `Game` / `PlaySession` rows
+- Any UI beyond the home player card and the login/register forms
+- Archive behavior — the `Game.archived` column exists but nothing reads or
+  writes it
 - RAWG API integration
 - CheapShark API integration
 - localStorage personalization
 - Robust validation/business rules for game and wishlist inputs
-- Automated tests
+- Automated tests (`npm test` is still the default placeholder that exits 1)
 
 ## 3. Tech Stack (current)
 
@@ -63,8 +73,12 @@ GameShelf is currently a **full-stack TypeScript app** using **Express + EJS + P
 - **ORM:** Prisma 7 (`prisma-client` generator output to `generated/prisma`)
 - **Database:** PostgreSQL
 - **DB Driver/Adapter:** `pg` + `@prisma/adapter-pg`
-- **Auth:** Better Auth + `@better-auth/prisma-adapter`
-- **Environment:** `dotenv`
+- **Auth:** Better Auth, using its built-in `better-auth/adapters/prisma`
+  adapter. (`@better-auth/prisma-adapter` is listed in `dependencies` but is
+  not imported anywhere; it can be dropped.)
+- **Environment:** `dotenv` locally, `@dotenvx/dotenvx` for deploys. The
+  `datasource` block in `schema.prisma` has no inline `url`; Prisma reads
+  `DATABASE_URL` through `prisma.config.ts`.
 - **Build Tooling:** esbuild + Sass + concurrently
 - **Dev runner:** `tsx` (`npm run dev:server`)
 - **Deployment:** Prisma Compute (`npm run deploy`)
@@ -72,107 +86,108 @@ GameShelf is currently a **full-stack TypeScript app** using **Express + EJS + P
 ## 4. Current Database Design (implemented)
 
 The schema in `prisma/schema.prisma` and migrations
-`prisma/migrations/20260723041044_init` +
-`prisma/migrations/20260723060100_add_better_auth` implement:
+`prisma/migrations/20260726182943_init` +
+`prisma/migrations/20260730003838_update_gamestatus_enum` implement the
+following. No model uses `@@map`/`@map`, so table and column names are the
+PascalCase/camelCase Prisma identifiers exactly as written below.
 
-### `games`
+### `Game`
 
-| Field     | Type              | Notes                                      |
-| --------- | ----------------- | ------------------------------------------ |
-| id        | SERIAL PK         | Prisma `Int @id @default(autoincrement())` |
-| user_name | VARCHAR(50)       | required                                   |
-| title     | VARCHAR(100)      | required                                   |
-| platform  | VARCHAR(30)       | required                                   |
-| status    | enum `GameStatus` | default `BACKLOG`                          |
-| rating    | SMALLINT          | nullable                                   |
-| cover_url | VARCHAR(255)      | nullable                                   |
-| added_at  | TIMESTAMP         | default current timestamp                  |
+| Field    | Type              | Notes                                      |
+| -------- | ----------------- | ------------------------------------------ |
+| id       | SERIAL PK         | Prisma `Int @id @default(autoincrement())` |
+| userId   | TEXT FK           | references `User(id)`, cascade delete      |
+| title    | VARCHAR(100)      | required                                   |
+| platform | VARCHAR(30)       | required                                   |
+| priority | enum `Priority`   | nullable, no default                       |
+| status   | enum `GameStatus` | default `BACKLOG`                          |
+| archived | BOOLEAN           | default `false`                            |
+| rating   | SMALLINT          | nullable                                   |
+| coverUrl | VARCHAR(255)      | nullable                                   |
+| addedAt  | TIMESTAMP(3)      | default current timestamp                  |
+| notes    | VARCHAR(500)      | nullable                                   |
 
-### `play_sessions`
+Wishlist entries live in this table: a wishlisted game is a `Game` row with
+`status = 'WISHLIST'`, optionally ranked with `priority`. The original
+`wishlist` boolean column was dropped by the second migration in favor of the
+`WISHLIST` enum value.
 
-| Field        | Type         | Notes                  |
-| ------------ | ------------ | ---------------------- |
-| id           | SERIAL PK    |                        |
-| game_id      | INTEGER FK   | references `games(id)` |
-| hours        | DECIMAL(4,1) | required               |
-| session_date | DATE         | required               |
-| notes        | TEXT         | nullable               |
+### `PlaySession`
 
-### `wishlist`
+| Field       | Type         | Notes                                 |
+| ----------- | ------------ | ------------------------------------- |
+| id          | SERIAL PK    |                                       |
+| gameId      | INTEGER FK   | references `Game(id)`, cascade delete |
+| userId      | TEXT FK      | references `User(id)`, cascade delete |
+| hours       | DECIMAL(4,1) | required                              |
+| sessionDate | DATE         | required                              |
+| notes       | TEXT         | nullable                              |
 
-| Field       | Type            | Notes                     |
-| ----------- | --------------- | ------------------------- |
-| id          | SERIAL PK       |                           |
-| user_name   | VARCHAR(50)     | required                  |
-| title       | VARCHAR(100)    | required                  |
-| priority    | enum `Priority` | default `MEDIUM`          |
-| price_limit | DECIMAL(6,2)    | nullable                  |
-| saved_at    | TIMESTAMP       | default current timestamp |
+### Relationships
 
-### Relationship
-
-- `games` 1 -> many `play_sessions` via `play_sessions.game_id`
-- Cascade delete configured from game to play sessions
-- `user` 1 -> many `session` via `session.user_id` (cascade delete)
-- `user` 1 -> many `account` via `account.user_id` (cascade delete)
+- `User` 1 -> many `Game` via `Game.userId` (cascade delete)
+- `User` 1 -> many `PlaySession` via `PlaySession.userId` (cascade delete)
+- `Game` 1 -> many `PlaySession` via `PlaySession.gameId` (cascade delete)
+- `User` 1 -> many `Session` via `Session.userId` (cascade delete)
+- `User` 1 -> many `Account` via `Account.userId` (cascade delete)
 
 ### Auth Tables (Better Auth)
 
-#### `user`
+#### `User`
 
-| Field          | Type      | Notes                |
-| -------------- | --------- | -------------------- |
-| id             | TEXT PK   | Better Auth user id  |
-| name           | TEXT      | required             |
-| email          | TEXT      | unique               |
-| email_verified | BOOLEAN   | default `false`      |
-| image          | TEXT      | nullable             |
-| created_at     | TIMESTAMP | default current time |
-| updated_at     | TIMESTAMP | updated timestamp    |
+| Field         | Type         | Notes                |
+| ------------- | ------------ | -------------------- |
+| id            | TEXT PK      | Better Auth user id  |
+| name          | TEXT         | required             |
+| email         | TEXT         | unique               |
+| emailVerified | BOOLEAN      | default `false`      |
+| image         | TEXT         | nullable             |
+| createdAt     | TIMESTAMP(3) | default current time |
+| updatedAt     | TIMESTAMP(3) | Prisma `@updatedAt`  |
 
-#### `session`
+#### `Session`
 
-| Field      | Type      | Notes                         |
-| ---------- | --------- | ----------------------------- |
-| id         | TEXT PK   |                               |
-| expires_at | TIMESTAMP | required                      |
-| token      | TEXT      | unique                        |
-| created_at | TIMESTAMP | default current time          |
-| updated_at | TIMESTAMP | updated timestamp             |
-| ip_address | TEXT      | nullable                      |
-| user_agent | TEXT      | nullable                      |
-| user_id    | TEXT FK   | references `user(id)` cascade |
+| Field     | Type         | Notes                         |
+| --------- | ------------ | ----------------------------- |
+| id        | TEXT PK      |                               |
+| expiresAt | TIMESTAMP(3) | required                      |
+| token     | TEXT         | unique                        |
+| createdAt | TIMESTAMP(3) | default current time          |
+| updatedAt | TIMESTAMP(3) | Prisma `@updatedAt`           |
+| ipAddress | TEXT         | nullable                      |
+| userAgent | TEXT         | nullable                      |
+| userId    | TEXT FK      | references `User(id)` cascade |
 
-#### `account`
+#### `Account`
 
-| Field                    | Type      | Notes                                  |
-| ------------------------ | --------- | -------------------------------------- |
-| id                       | TEXT PK   |                                        |
-| account_id               | TEXT      | required                               |
-| provider_id              | TEXT      | required                               |
-| user_id                  | TEXT FK   | references `user(id)` cascade          |
-| access_token             | TEXT      | nullable                               |
-| refresh_token            | TEXT      | nullable                               |
-| id_token                 | TEXT      | nullable                               |
-| access_token_expires_at  | TIMESTAMP | nullable                               |
-| refresh_token_expires_at | TIMESTAMP | nullable                               |
-| scope                    | TEXT      | nullable                               |
-| password                 | TEXT      | nullable (email/password auth support) |
-| created_at               | TIMESTAMP | default current time                   |
-| updated_at               | TIMESTAMP | updated timestamp                      |
+| Field                 | Type         | Notes                                  |
+| --------------------- | ------------ | -------------------------------------- |
+| id                    | TEXT PK      |                                        |
+| accountId             | TEXT         | required                               |
+| providerId            | TEXT         | required                               |
+| userId                | TEXT FK      | references `User(id)` cascade          |
+| accessToken           | TEXT         | nullable                               |
+| refreshToken          | TEXT         | nullable                               |
+| idToken               | TEXT         | nullable                               |
+| accessTokenExpiresAt  | TIMESTAMP(3) | nullable                               |
+| refreshTokenExpiresAt | TIMESTAMP(3) | nullable                               |
+| scope                 | TEXT         | nullable                               |
+| password              | TEXT         | nullable (email/password auth support) |
+| createdAt             | TIMESTAMP(3) | default current time                   |
+| updatedAt             | TIMESTAMP(3) | Prisma `@updatedAt`                    |
 
-Unique index: (`provider_id`, `account_id`)
+Unique index: (`providerId`, `accountId`)
 
-#### `verification`
+#### `Verification`
 
-| Field      | Type      | Notes                |
-| ---------- | --------- | -------------------- |
-| id         | TEXT PK   |                      |
-| identifier | TEXT      | required             |
-| value      | TEXT      | required             |
-| expires_at | TIMESTAMP | required             |
-| created_at | TIMESTAMP | default current time |
-| updated_at | TIMESTAMP | updated timestamp    |
+| Field      | Type         | Notes                |
+| ---------- | ------------ | -------------------- |
+| id         | TEXT PK      |                      |
+| identifier | TEXT         | required             |
+| value      | TEXT         | required             |
+| expiresAt  | TIMESTAMP(3) | required             |
+| createdAt  | TIMESTAMP(3) | default current time |
+| updatedAt  | TIMESTAMP(3) | Prisma `@updatedAt`  |
 
 Unique index: (`identifier`, `value`)
 
@@ -198,14 +213,35 @@ Unique index: (`identifier`, `value`)
 - `npm run build:server` — bundle server and copy views/public into `dist`
 - `npm run typecheck` — TypeScript checks for server and client configs
 - `npm run start` — run server once with `tsx`
-- `npm run deploy` — deploy app via Prisma CLI using `deploy.env`
+- `npm run deploy` — deploy via `dotenvx run -f deploy.env -- bunx @prisma/cli app deploy --db`
+- `npm test` — placeholder only; still the npm default that prints an error and exits 1
 - `npx prisma migrate deploy` — apply migrations to target database
 
 ## 7. Next Milestones
 
-1. Add full CRUD routes for `games`, `play_sessions`, and `wishlist`
-2. Add authenticated ownership flow so game/wishlist records are tied to signed-in users
+1. Add full CRUD routes for `Game` (backlog + wishlist, via `status`) and `PlaySession`
+2. Add authenticated ownership flow so every game/session query is scoped to
+   `session.user.id`, starting with `GET /games`
 3. Add validation and centralized error handling for all write operations
 4. Build authenticated UI workflows for managing backlog, sessions, and wishlist data
 5. Integrate RAWG and CheapShark APIs
 6. Add tests plus seed/sample data workflow
+
+## 8. Open Gaps Against the Rubric
+
+Tracked here so the final report is not the first place these surface:
+
+- **Three form element types** — the app currently ships only text/email/password
+  inputs. Needs at least one `select`, radio group, or checkbox (status,
+  platform, priority, and `archived` are all natural fits).
+- **Edit existing records with pre-filled data, 3+ fields** — no edit UI or
+  update route exists yet.
+- **Two web APIs** — only local endpoints (`/api/me`, `/games`) exist today;
+  RAWG and CheapShark are still unstarted.
+- **Database records export** — submission requires a SQL export of real data;
+  there is no seed or sample data yet.
+- **Sessions/Web storage** — satisfied by Better Auth sessions.
+- **50+ lines of client-side JS** — satisfied by `src/client/home.ts` and
+  `src/client/auth.ts`.
+- **External JS/CSS files** — satisfied; all scripts and styles are bundled to
+  `dist/client/assets` and linked, with none inline in the EJS views.
