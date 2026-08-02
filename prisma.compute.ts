@@ -11,7 +11,7 @@ export default defineComputeConfig({
     build: {
       command: "npm run build",
       outputDirectory: "dist",
-      entrypoint: "server.js",
+      entrypoint: "server.mjs",
     },
   },
 });

@@ -3,8 +3,8 @@ import path from "node:path";
 import express from "express";
 import ejs from "ejs";
 import { fromNodeHeaders, toNodeHandler } from "better-auth/node";
-import { auth } from "./lib/auth.js";
-import { prisma } from "./lib/prisma.js";
+import { auth } from "./lib/auth.ts";
+import { prisma } from "./lib/prisma.ts";
 
 const app = express();
 const port = process.env.PORT ?? 3000;

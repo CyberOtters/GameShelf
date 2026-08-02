@@ -13,7 +13,7 @@ const only = args.includes("--server")
 /** @type {import("esbuild").BuildOptions} */
 const server = {
   entryPoints: ["src/server/index.ts"],
-  outfile: "dist/server.js",
+  outfile: "dist/server.mjs",
   bundle: true,
   platform: "node",
   format: "esm",

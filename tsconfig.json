@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "allowImportingTsExtensions": true,
     "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
@@ -7,6 +8,7 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "outDir": "dist",
+    "noEmit": true,
     "noImplicitAny": false
   },
   "include": [
