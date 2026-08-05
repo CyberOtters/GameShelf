@@ -27,7 +27,11 @@ const server = {
 
 /** @type {import("esbuild").BuildOptions} */
 const client = {
-  entryPoints: ["src/client/home.ts", "src/client/auth.ts"],
+  entryPoints: [
+    "src/client/home.ts",
+    "src/client/auth.ts",
+    "src/client/shelf.ts",
+  ],
   outdir: "dist/client/assets",
   bundle: true,
   format: "esm",
