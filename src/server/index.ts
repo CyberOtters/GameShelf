@@ -50,6 +50,16 @@ app.get(["/login", "/register"], (_req, res) => {
   });
 });
 
+// gameshelf
+app.get("/shelf", (_req, res) => {
+  res.render("shelf", {
+    assets: {
+      js: "assets/shelf.js",
+      css: ["/assets/shared.css", "/assets/shelf.css"],
+    },
+  });
+});
+
 app.get("/api/me", async (req, res) => {
   const session = await auth.api.getSession({
     headers: fromNodeHeaders(req.headers),
