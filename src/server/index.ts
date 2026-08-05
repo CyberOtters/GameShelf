@@ -52,8 +52,52 @@ app.get(["/login", "/register"], (_req, res) => {
 
 // gameshelf
 app.get("/shelf", (_req, res) => {
+  const games = [
+    {
+      id: 1,
+      title: "Hades",
+      platform: "PC",
+      status: "PLAYING",
+      priority: "HIGH",
+      rating: 9,
+      notes: "Working through the main story.",
+      archived: false,
+    },
+    {
+      id: 2,
+      title: "Hollow Knight",
+      platform: "Switch",
+      status: "BACKLOG",
+      priority: "MEDIUM",
+      rating: null,
+      notes: "",
+      archived: false,
+    },
+    {
+      id: 3,
+      title: "Silksong",
+      platform: "XBOX",
+      status: "COMPLETED",
+      priority: "HIGH",
+      rating: null,
+      notes: "Buy after release.",
+      archived: false,
+    },
+    {
+      id: 4,
+      title: "Final Fantasy 7",
+      platform: "PS5",
+      status: "DROPPED",
+      priority: "LOW",
+      rating: null,
+      notes: "Wait for remake",
+      archived: false,
+    },
+  ];
+
   res.render("shelf", {
     assets: {
+      games,
       js: "assets/shelf.js",
       css: ["/assets/shared.css", "/assets/shelf.css"],
     },
