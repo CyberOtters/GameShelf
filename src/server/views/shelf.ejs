@@ -1,6 +1,11 @@
 <%- include('partials/header', { title: 'GameShelf', stageId: 'stage', tagline: null }) %>
 
-  <% if (games.length === 0) { %>
+<section>
+
+    <button type="button" id="open-add-form">Add Game</button>
+</section>
+
+<% if (games.length === 0) { %>
     <p>Your shelf is empty.</p>
   <% } else { %>
     <section class="game-grid">
