@@ -96,8 +96,8 @@ app.get("/shelf", (_req, res) => {
   ];
 
   res.render("shelf", {
+    games,
     assets: {
-      games,
       js: "assets/shelf.js",
       css: ["/assets/shared.css", "/assets/shelf.css"],
     },

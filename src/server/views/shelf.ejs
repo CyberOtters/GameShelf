@@ -1,9 +1,27 @@
 <%- include('partials/header', { title: 'GameShelf', stageId: 'stage', tagline: null }) %>
 
-<main>
-    <h1>My Game Shelf</h1>
-    <p>The shelf page is connected.</p>
-  </main>
+  <% if (games.length === 0) { %>
+    <p>Your shelf is empty.</p>
+  <% } else { %>
+    <section class="game-grid">
+      <% for (const game of games) { %>
+        <article
+          class="game-card"
+          data-game-id="<%= game.id %>"
+          data-status="<%= game.status %>"
+        >
+          <h2><%= game.title %></h2>
+          <p><%= game.platform %></p>
+          <p><%= game.status %></p>
+          <p>Priority: <%= game.priority ?? "None" %></p>
+
+          <button type="button" class="edit-game-button">
+            Edit
+          </button>
+        </article>
+      <% } %>
+    </section>
+  <% } %>
 
 <script type="module" src="<%= assets.js %>"></script>
 
