@@ -4,7 +4,9 @@ import express from "express";
 import ejs from "ejs";
 import { fromNodeHeaders, toNodeHandler } from "better-auth/node";
 import { auth } from "./lib/auth.ts";
-import { prisma } from "./lib/prisma.ts";
+import { errorHandler } from "./lib/errors.ts";
+import { gamesRouter } from "./routes/games.ts";
+import { requireAuth } from "./lib/requireAuth.ts";
 
 const app = express();
 const port = process.env.PORT ?? 3000;
@@ -50,18 +52,16 @@ app.get(["/login", "/register"], (_req, res) => {
   });
 });
 
-app.get("/api/me", async (req, res) => {
+app.get("/api/me", requireAuth, async (req, res) => {
   const session = await auth.api.getSession({
     headers: fromNodeHeaders(req.headers),
   });
   res.json(session);
 });
 
-// quick sanity check that Prisma + Postgres are wired up
-app.get("/games", async (_req, res) => {
-  const games = await prisma.game.findMany();
-  res.json(games);
-});
+app.use("/api/games", gamesRouter);
+
+app.use(errorHandler);
 
 app.listen(port, () => {
   console.log(`GameShelf listening on http://localhost:${port}`);
