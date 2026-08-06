@@ -41,9 +41,14 @@ GameShelf is currently a **full-stack TypeScript app** using **Express + EJS + P
 - Wishlist is modeled as `GameStatus.WISHLIST` on `Game` (plus the nullable
   `priority` column) rather than as a separate table
 - Working Prisma + Postgres connection via `pg` + `@prisma/adapter-pg`
-- Basic data route:
-  - `GET /games` returns `prisma.game.findMany()` JSON (unfiltered — not yet
-    scoped to the signed-in user)
+- Auth-gated `Game` CRUD, all scoped to the signed-in user
+  (`src/server/routes/games.ts`):
+  - `requireAuth` middleware resolves the Better Auth session and 401s without
+    one (`src/server/lib/requireAuth.ts`)
+  - `GET /api/games` with `status` and `archived` filters, `POST`, `PATCH /:id`,
+    `DELETE /:id`; another user's row reads as 404, never 403
+  - zod request schemas (`src/server/lib/validateGame.ts`) and a centralized
+    JSON error handler (`src/server/lib/errors.ts`)
 - Build/deploy pipeline:
   - esbuild server/client bundling
   - Prisma generate on build
@@ -51,19 +56,19 @@ GameShelf is currently a **full-stack TypeScript app** using **Express + EJS + P
 
 ### What is not implemented yet
 
-- Game CRUD routes beyond `GET /games`
 - Play session CRUD routes
 - Wishlist workflows on top of `GameStatus.WISHLIST` / `priority`
-- Auth-gated data ownership — no route currently checks the session before
-  reading or writing `Game` / `PlaySession` rows
+- Auth-gated data ownership for `PlaySession` — `Game` routes are scoped to the
+  session, play sessions have no routes yet
 - Any UI beyond the home player card and the login/register forms
-- Archive behavior — the `Game.archived` column exists but nothing reads or
-  writes it
+- Archive UI — `Game.archived` is readable and writable through the game routes,
+  but nothing in the interface uses it yet
 - RAWG API integration
 - CheapShark API integration
 - localStorage personalization
-- Robust validation/business rules for game and wishlist inputs
-- Automated tests (`npm test` is still the default placeholder that exits 1)
+- Business rules beyond field validation (game writes are validated with zod;
+  wishlist-specific rules are not written yet)
+- Tests for anything beyond the `/api/games` routes (no client or auth tests)
 
 ## 3. Tech Stack (current)
 
@@ -200,7 +205,10 @@ Unique index: (`identifier`, `value`)
 | GET    | `/register`        | Implemented | renders `auth.ejs` with auth assets (register tab) |
 | ALL    | `/api/auth/*splat` | Implemented | Better Auth handler (sign-up/sign-in/sign-out etc) |
 | GET    | `/api/me`          | Implemented | returns current session/user JSON (or null)        |
-| GET    | `/games`           | Implemented | returns all rows from `games` as JSON              |
+| GET    | `/api/games`       | Implemented | signed-in user's games; `?status=` and `?archived=true\|false\|all` filters |
+| POST   | `/api/games`       | Implemented | creates a game owned by the session user (body `userId` ignored) |
+| PATCH  | `/api/games/:id`   | Implemented | updates title/platform/status/priority/rating/notes/archived; 404 on another user's row |
+| DELETE | `/api/games/:id`   | Implemented | deletes an owned game (cascades its play sessions); 404 otherwise |
 
 ## 6. Execution Commands (current)
 
@@ -214,14 +222,15 @@ Unique index: (`identifier`, `value`)
 - `npm run typecheck` — TypeScript checks for server and client configs
 - `npm run start` — run server once with `tsx`
 - `npm run deploy` — deploy via `dotenvx run -f deploy.env -- bunx @prisma/cli app deploy --db`
-- `npm test` — placeholder only; still the npm default that prints an error and exits 1
+- `npm test` — Vitest run of `src/server/**/*.test.ts`; needs a running database
+- `npm run test:watch` — same suite in watch mode
 - `npx prisma migrate deploy` — apply migrations to target database
 
 ## 7. Next Milestones
 
 1. Add full CRUD routes for `Game` (backlog + wishlist, via `status`) and `PlaySession`
 2. Add authenticated ownership flow so every game/session query is scoped to
-   `session.user.id`, starting with `GET /games`
+   `session.user.id`, starting with `GET /api/games`
 3. Add validation and centralized error handling for all write operations
 4. Build authenticated UI workflows for managing backlog, sessions, and wishlist data
 5. Integrate RAWG and CheapShark APIs
@@ -234,9 +243,9 @@ Tracked here so the final report is not the first place these surface:
 - **Three form element types** — the app currently ships only text/email/password
   inputs. Needs at least one `select`, radio group, or checkbox (status,
   platform, priority, and `archived` are all natural fits).
-- **Edit existing records with pre-filled data, 3+ fields** — no edit UI or
-  update route exists yet.
-- **Two web APIs** — only local endpoints (`/api/me`, `/games`) exist today;
+- **Edit existing records with pre-filled data, 3+ fields** — `PATCH /api/games/:id`
+  exists; the edit UI does not.
+- **Two web APIs** — only local endpoints (`/api/me`, `/api/games`) exist today;
   RAWG and CheapShark are still unstarted.
 - **Database records export** — submission requires a SQL export of real data;
   there is no seed or sample data yet.
