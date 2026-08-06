@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "deploy": "dotenvx run -f deploy.env -- bunx @prisma/cli@latest app deploy --db --env deploy.env",
     "dev": "concurrently -n server,css,js -c blue,yellow,magenta \"npm:dev:server\" \"npm:dev:css\" \"npm:dev:js\"",
     "dev:server": "tsx watch src/server/index.ts",
@@ -30,7 +31,8 @@
     "dotenv": "^17.4.2",
     "ejs": "^6.0.1",
     "express": "^5.2.1",
-    "pg": "^8.22.0"
+    "pg": "^8.22.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@dotenvx/dotenvx": "^2.17.2",
@@ -42,6 +44,7 @@
     "prisma": "^7.9.0",
     "sass": "^1.101.7",
     "tsx": "^4.23.1",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
   }
 }

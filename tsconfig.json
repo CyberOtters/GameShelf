@@ -14,7 +14,7 @@
   "include": [
     "src/server",
     "prisma.config.ts",
-    "vite.config.ts",
+    "vitest.config.ts",
     "prisma.compute.ts"
   ]
 }

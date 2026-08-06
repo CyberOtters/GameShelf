@@ -10,17 +10,17 @@ Implemented today:
 - Better Auth integration with Prisma adapter
 - Session-aware home screen (`/api/me`)
 - Prisma models and migrations for game data and auth tables
+- Auth-gated `Game` CRUD scoped to the signed-in user, with zod request
+  validation and centralized JSON errors
 - Build pipeline for server, client JS, and SCSS assets
 - Prisma Compute deployment configuration
 
 Still in progress:
 
-- CRUD beyond `GET /games`
-- Auth-gated ownership flows — no data route checks the session yet, so
-  `GET /games` returns every user's rows
+- Play session CRUD
 - Any UI beyond the home player card and the login/register forms
 - External API integrations (RAWG, CheapShark)
-- Automated tests (`npm test` is still the npm placeholder and exits 1)
+- Test coverage beyond the `/api/games` route tests
 
 ## Tech Stack
 
@@ -137,7 +137,9 @@ Open http://localhost:3000.
 - `npm run typecheck`: runs TS type checks for server and client tsconfigs
 - `npm run start`: runs the server once with `tsx`
 - `npm run deploy`: deploys with `dotenvx` + `bunx @prisma/cli app deploy --db` using `deploy.env`
-- `npm test`: not implemented — still the npm placeholder that exits 1
+- `npm test`: runs the Vitest suite once; `npm run test:watch` for watch mode.
+  The route tests hit a real database, so start one first (`npx prisma dev`).
+  They create and delete their own `@gameshelf.test` users and rows.
 
 ## Routes (Current)
 
@@ -151,7 +153,16 @@ Open http://localhost:3000.
 
 - `ALL /api/auth/*splat`: Better Auth endpoints (sign up, sign in, sign out, session)
 - `GET /api/me`: current session/user payload (or `null`)
-- `GET /games`: returns all rows from the `Game` table (not yet scoped to the signed-in user)
+All `/api/games` routes require a session and only ever touch the signed-in user's
+rows; a request for someone else's game returns 404. Errors come back as
+`{ "error": "...", "fields": { ... } }`.
+
+- `GET /api/games`: the user's games, filterable with `?status=BACKLOG` and
+  `?archived=true|false|all` (archived rows are hidden by default)
+- `POST /api/games`: create a game — `userId` always comes from the session
+- `PATCH /api/games/:id`: update `title`, `platform`, `status`, `priority`,
+  `rating`, `notes`, or `archived`
+- `DELETE /api/games/:id`: delete a game and, by cascade, its play sessions
 
 ## Database Models (Current)
 
