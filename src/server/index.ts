@@ -14,6 +14,7 @@ const isDev = process.env.STAGE === "development";
 console.log(
   `GameShelf starting in ${isDev ? "development" : "production"} mode`,
 );
+console.log(`DATABASE_URL=${process.env.DATABASE_URL}`);
 
 const clientDir = isDev
   ? path.resolve(import.meta.dirname, "../../dist/client")
