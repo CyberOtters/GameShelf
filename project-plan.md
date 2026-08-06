@@ -68,7 +68,7 @@ GameShelf is currently a **full-stack TypeScript app** using **Express + EJS + P
 - localStorage personalization
 - Business rules beyond field validation (game writes are validated with zod;
   wishlist-specific rules are not written yet)
-- Automated tests (`npm test` is still the default placeholder that exits 1)
+- Tests for anything beyond the `/api/games` routes (no client or auth tests)
 
 ## 3. Tech Stack (current)
 
@@ -222,7 +222,8 @@ Unique index: (`identifier`, `value`)
 - `npm run typecheck` — TypeScript checks for server and client configs
 - `npm run start` — run server once with `tsx`
 - `npm run deploy` — deploy via `dotenvx run -f deploy.env -- bunx @prisma/cli app deploy --db`
-- `npm test` — placeholder only; still the npm default that prints an error and exits 1
+- `npm test` — Vitest run of `src/server/**/*.test.ts`; needs a running database
+- `npm run test:watch` — same suite in watch mode
 - `npx prisma migrate deploy` — apply migrations to target database
 
 ## 7. Next Milestones
