@@ -19,7 +19,7 @@ Still in progress:
 
 - Play session CRUD
 - Any UI beyond the home player card and the login/register forms
-- External API integrations (RAWG, CheapShark)
+- External API integration (IGDB)
 - Test coverage beyond the `/api/games` route tests
 
 ## Tech Stack
@@ -79,6 +79,8 @@ See `.env.example` for the checked-in template.
 
 ```env
 DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DBNAME?schema=public"
+TWITCH_CLIENT_ID="your-twitch-app-client-id"
+TWITCH_CLIENT_SECRET="your-twitch-app-client-secret"
 BETTER_AUTH_SECRET="replace-with-long-random-secret"   # openssl rand -hex 32
 BETTER_AUTH_URL="http://localhost:3000"
 STAGE="development"
@@ -92,6 +94,7 @@ Notes:
   inline `datasource.url`; Prisma reads the variable through `prisma.config.ts`,
   and `src/server/lib/prisma.ts` passes it to the `pg` pool.
 - `BETTER_AUTH_URL` should be your public app URL in production.
+- `TWITCH_CLIENT_ID` and `TWITCH_CLIENT_SECRET` are required for IGDB API calls.
 - `STAGE=development` tells the server to load static assets from the local development layout.
 - `PORT` is optional and defaults to `3000`.
 
@@ -153,9 +156,9 @@ Open http://localhost:3000.
 
 - `ALL /api/auth/*splat`: Better Auth endpoints (sign up, sign in, sign out, session)
 - `GET /api/me`: current session/user payload (or `null`)
-All `/api/games` routes require a session and only ever touch the signed-in user's
-rows; a request for someone else's game returns 404. Errors come back as
-`{ "error": "...", "fields": { ... } }`.
+  All `/api/games` routes require a session and only ever touch the signed-in user's
+  rows; a request for someone else's game returns 404. Errors come back as
+  `{ "error": "...", "fields": { ... } }`.
 
 - `GET /api/games`: the user's games, filterable with `?status=BACKLOG` and
   `?archived=true|false|all` (archived rows are hidden by default)
