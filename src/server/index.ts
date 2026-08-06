@@ -127,7 +127,7 @@ app.get("/shelf", (_req, res) => {
   res.render("shelf", {
     games,
     assets: {
-      js: "assets/shelf.js",
+      js: "/assets/shelf.js",
       css: ["/assets/shared.css", "/assets/shelf.css"],
     },
   });
