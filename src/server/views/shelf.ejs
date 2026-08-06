@@ -1,46 +1,13 @@
 <%- include('partials/header', { title: 'GameShelf', stageId: 'stage', tagline: null }) %>
 
 <section>
-
     <button type="button" id="open-add-form">Add Game</button>
 </section>
 
-<% if (games.length === 0) { %>
-    <p>Your shelf is empty.</p>
-  <% } else { %>
-    <section class="game-grid">
-      <% for (const game of games) { %>
-        <article
-          class="game-card"
-          data-game-id="<%= game.id %>"
-          data-status="<%= game.status %>"
-        >
-          <h2><%= game.title %></h2>
-          <p>Platform: <%= game.platform %></p>
-          <p>Status: <%= game.status %></p>
-          <p>Priority: <%= game.priority ?? "None" %></p>
-          <p>Rating: <%= game.rating ?? "Not rated" %></p>
-          <p>Archived: <%= game.archived ? "Yes" : "No" %></p>
+<p id="shelf-message">Loading games...</p>
 
-          <% if (game.notes) { %>
-          <p>Notes: <%= game.notes %></p>
-          <% } %>
-
-          <p>
-          Added:
-          <%= game.addedAt.toLocaleDateString() %>
-          </p>
-
-          <button type="button" class="edit-game-button">
-            Edit
-          </button>
-        </article>
-      <% } %>
-    </section>
-  <% } %>
+<section class="game-grid" id="game-grid"></section>
 
 <script type="module" src="<%= assets.js %>"></script>
-
-
 
 <%- include('partials/footer') %>
