@@ -7,6 +7,7 @@ import { auth } from "./lib/auth.ts";
 import { errorHandler } from "./lib/errors.ts";
 import { gamesRouter } from "./routes/games.ts";
 import { requireAuth } from "./lib/requireAuth.ts";
+import { shelfRouter } from "./routes/shelf.ts";
 
 const app = express();
 const port = process.env.PORT ?? 3000;
@@ -53,92 +54,14 @@ app.get(["/login", "/register"], (_req, res) => {
   });
 });
 
-// gameshelf
-app.get("/shelf", (_req, res) => {
-  // temporary games or data
-  const games = [
-    {
-      id: 1,
-      userId: "temporary-user-id",
-      title: "Hades",
-      platform: "PC",
-      priority: "HIGH",
-      status: "PLAYING",
-      archived: false,
-      rating: 9,
-      coverUrl: null,
-      addedAt: new Date("2026-07-10T12:00:00"),
-      notes: "Working through the main story.",
-    },
-    {
-      id: 2,
-      userId: "temporary-user-id",
-      title: "Hollow Knight",
-      platform: "Nintendo Switch",
-      priority: "MEDIUM",
-      status: "BACKLOG",
-      archived: false,
-      rating: null,
-      coverUrl: null,
-      addedAt: new Date("2026-07-15T12:00:00"),
-      notes: null,
-    },
-    {
-      id: 3,
-      userId: "temporary-user-id",
-      title: "Metroid Prime 4",
-      platform: "Nintendo Switch",
-      priority: "HIGH",
-      status: "WISHLIST",
-      archived: false,
-      rating: null,
-      coverUrl: null,
-      addedAt: new Date("2026-07-20T12:00:00"),
-      notes: "Buy after release.",
-    },
-    {
-      id: 4,
-      userId: "temporary-user-id",
-      title: "Final Fantasy VII Rebirth",
-      platform: "PS5",
-      priority: "LOW",
-      status: "DROPPED",
-      archived: true,
-      rating: 6,
-      coverUrl: null,
-      addedAt: new Date("2026-07-25T12:00:00"),
-      notes: "May return to it later.",
-    },
-    {
-      id: 5,
-      userId: "temporary-user-id",
-      title: "Celeste",
-      platform: "PC",
-      priority: "MEDIUM",
-      status: "COMPLETED",
-      archived: false,
-      rating: 10,
-      coverUrl: null,
-      addedAt: new Date("2026-07-30T12:00:00"),
-      notes: "Finished the main story.",
-    },
-  ];
-
-  res.render("shelf", {
-    games,
-    assets: {
-      js: "/assets/shelf.js",
-      css: ["/assets/shared.css", "/assets/shelf.css"],
-    },
-  });
-});
-
 app.get("/api/me", requireAuth, async (req, res) => {
   const session = await auth.api.getSession({
     headers: fromNodeHeaders(req.headers),
   });
   res.json(session);
 });
+
+app.use("/shelf", shelfRouter);
 
 app.use("/api/games", gamesRouter);
 
