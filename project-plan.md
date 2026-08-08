@@ -63,8 +63,7 @@ GameShelf is currently a **full-stack TypeScript app** using **Express + EJS + P
 - Any UI beyond the home player card and the login/register forms
 - Archive UI — `Game.archived` is readable and writable through the game routes,
   but nothing in the interface uses it yet
-- RAWG API integration
-- CheapShark API integration
+- IGDB API integration
 - localStorage personalization
 - Business rules beyond field validation (game writes are validated with zod;
   wishlist-specific rules are not written yet)
@@ -198,17 +197,17 @@ Unique index: (`identifier`, `value`)
 
 ## 5. Current Routes
 
-| Method | Path               | Status      | Behavior                                           |
-| ------ | ------------------ | ----------- | -------------------------------------------------- |
-| GET    | `/`                | Implemented | renders `index.ejs` with home assets               |
-| GET    | `/login`           | Implemented | renders `auth.ejs` with auth assets (login tab)    |
-| GET    | `/register`        | Implemented | renders `auth.ejs` with auth assets (register tab) |
-| ALL    | `/api/auth/*splat` | Implemented | Better Auth handler (sign-up/sign-in/sign-out etc) |
-| GET    | `/api/me`          | Implemented | returns current session/user JSON (or null)        |
-| GET    | `/api/games`       | Implemented | signed-in user's games; `?status=` and `?archived=true\|false\|all` filters |
-| POST   | `/api/games`       | Implemented | creates a game owned by the session user (body `userId` ignored) |
+| Method | Path               | Status      | Behavior                                                                                |
+| ------ | ------------------ | ----------- | --------------------------------------------------------------------------------------- |
+| GET    | `/`                | Implemented | renders `index.ejs` with home assets                                                    |
+| GET    | `/login`           | Implemented | renders `auth.ejs` with auth assets (login tab)                                         |
+| GET    | `/register`        | Implemented | renders `auth.ejs` with auth assets (register tab)                                      |
+| ALL    | `/api/auth/*splat` | Implemented | Better Auth handler (sign-up/sign-in/sign-out etc)                                      |
+| GET    | `/api/me`          | Implemented | returns current session/user JSON (or null)                                             |
+| GET    | `/api/games`       | Implemented | signed-in user's games; `?status=` and `?archived=true\|false\|all` filters             |
+| POST   | `/api/games`       | Implemented | creates a game owned by the session user (body `userId` ignored)                        |
 | PATCH  | `/api/games/:id`   | Implemented | updates title/platform/status/priority/rating/notes/archived; 404 on another user's row |
-| DELETE | `/api/games/:id`   | Implemented | deletes an owned game (cascades its play sessions); 404 otherwise |
+| DELETE | `/api/games/:id`   | Implemented | deletes an owned game (cascades its play sessions); 404 otherwise                       |
 
 ## 6. Execution Commands (current)
 
@@ -233,7 +232,7 @@ Unique index: (`identifier`, `value`)
    `session.user.id`, starting with `GET /api/games`
 3. Add validation and centralized error handling for all write operations
 4. Build authenticated UI workflows for managing backlog, sessions, and wishlist data
-5. Integrate RAWG and CheapShark APIs
+5. Integrate IGDB API
 6. Add tests plus seed/sample data workflow
 
 ## 8. Open Gaps Against the Rubric
@@ -246,7 +245,7 @@ Tracked here so the final report is not the first place these surface:
 - **Edit existing records with pre-filled data, 3+ fields** — `PATCH /api/games/:id`
   exists; the edit UI does not.
 - **Two web APIs** — only local endpoints (`/api/me`, `/api/games`) exist today;
-  RAWG and CheapShark are still unstarted.
+  IGDB is still unstarted.
 - **Database records export** — submission requires a SQL export of real data;
   there is no seed or sample data yet.
 - **Sessions/Web storage** — satisfied by Better Auth sessions.
