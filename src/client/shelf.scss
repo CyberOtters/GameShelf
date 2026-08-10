@@ -274,6 +274,38 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.game-hours {
+  font-weight: 800;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.25rem 0.45rem;
+  border: 2px solid var(--ink);
+  border-radius: 4px;
+  background: var(--paper);
+  white-space: nowrap;
+  color: var(--ink);
+  text-decoration: none;
+  transition: translate $press, box-shadow $press;
+
+  &:hover {
+    translate: -2px -2px;
+    box-shadow: 3px 3px 0 var(--ink);
+  }
+}
+
+.game-recent-session {
+  font-size: 0.78rem;
+  line-height: 1.35;
+  opacity: 0.8;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .game-rating {
@@ -386,7 +418,16 @@ body {
   opacity: 0.65;
 }
 
-.edit-game-button {
+.game-card-actions {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.edit-game-button,
+.log-session-button,
+.delete-game-button {
   font-family: "Bungee", cursive;
   font-size: 0.65rem;
   padding: 0.4rem 0.7rem;
@@ -396,4 +437,19 @@ body {
   border-radius: 8px;
   box-shadow: var(--shadow-sm);
   @include pressable;
+}
+
+.log-session-button {
+  background: var(--gold);
+}
+
+.delete-game-button {
+  background: var(--tomato);
+  color: var(--card);
+}
+
+.session-game-label {
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin-top: -0.35rem;
 }

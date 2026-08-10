@@ -41,6 +41,15 @@
       </form>
     </section>
 
+    <% if (demoAccount) { %>
+    <aside class="demo-account" aria-label="Demo account for local development">
+      <p class="demo-account-label">Demo account</p>
+      <p><strong>Email:</strong> <%= demoAccount.email %></p>
+      <p><strong>Password:</strong> <%= demoAccount.password %></p>
+      <p class="demo-account-note">Run <code>npm run db:seed</code> first if sign-in fails.</p>
+    </aside>
+    <% } %>
+
     <p class="foot"><a href="/">← Back to the shelf</a></p>
 
 <%- include('partials/footer') %>

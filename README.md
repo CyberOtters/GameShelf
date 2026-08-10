@@ -12,15 +12,16 @@ Implemented today:
 - Prisma models and migrations for game data and auth tables
 - Auth-gated `Game` CRUD scoped to the signed-in user, with zod request
   validation and centralized JSON errors
+- Auth-gated `PlaySession` CRUD nested under `/api/games/:id/sessions`
+- Shelf UI for managing games and logging play sessions with total hours
+- Demo seed script (`npm run db:seed`) and SQL export workflow
 - Build pipeline for server, client JS, and SCSS assets
 - Prisma Compute deployment configuration
 
 Still in progress:
 
-- Play session CRUD
-- Any UI beyond the home player card and the login/register forms
 - External API integration (IGDB)
-- Test coverage beyond the `/api/games` route tests
+- Test coverage beyond the `/api/games` and `/api/games/:id/sessions` route tests
 
 ## Tech Stack
 
@@ -126,7 +127,26 @@ npx prisma migrate deploy
 npm run dev
 ```
 
+5. Optional: load demo data for local development or SQL export:
+
+```bash
+npm run db:seed
+```
+
 Open http://localhost:3000.
+
+## Demo Account
+
+Created by `npm run db:seed` for local development and SQL export samples:
+
+| Field | Value |
+| ----- | ----- |
+| Email | `demo@gameshelf.dev` |
+| Password | `demo-password` |
+| Display name | Demo Player |
+
+The login page shows these credentials in development (`STAGE=development`).
+Source of truth: `src/server/lib/demoAccount.ts`.
 
 ## Scripts
 
@@ -139,6 +159,7 @@ Open http://localhost:3000.
 - `npm run build:server`: bundles server and copies views/public into `dist`
 - `npm run typecheck`: runs TS type checks for server and client tsconfigs
 - `npm run start`: runs the server once with `tsx`
+- `npm run db:seed`: runs `prisma/seed.ts` to create the demo user, games, and sessions
 - `npm run deploy`: deploys with `dotenvx` + `bunx @prisma/cli app deploy --db` using `deploy.env`
 - `npm test`: runs the Vitest suite once; `npm run test:watch` for watch mode.
   The route tests hit a real database, so start one first (`npx prisma dev`).
@@ -166,6 +187,83 @@ Open http://localhost:3000.
 - `PATCH /api/games/:id`: update `title`, `platform`, `status`, `priority`,
   `rating`, `notes`, or `archived`
 - `DELETE /api/games/:id`: delete a game and, by cascade, its play sessions
+
+All `/api/games/:gameId/sessions` routes require a session, verify the parent
+game belongs to the caller, and scope session rows to that same user. Responses
+serialize `hours` as a JSON number and `sessionDate` as `YYYY-MM-DD`.
+
+- `GET /api/games/:gameId/sessions`: list sessions for an owned game plus
+  `totalHours`
+- `POST /api/games/:gameId/sessions`: log hours against an owned game
+- `PATCH /api/games/:gameId/sessions/:sessionId`: update hours, date, or notes
+- `DELETE /api/games/:gameId/sessions/:sessionId`: delete one session
+
+## SQL Export (Submission Requirement)
+
+The rubric requires database records exported in SQL format.
+
+Run all commands from the `GameShelf` project folder.
+
+1. Start the database: `npx prisma dev` (leave it running)
+2. Seed demo data: `npm run db:seed`
+3. Export SQL: **`npm run db:export`**
+
+That writes `gameshelf-data.sql` in the project root. On Windows it finds
+`pg_dump` automatically (even when it is not on PATH), e.g.
+`C:\Program Files\PostgreSQL\18\bin\pg_dump.exe`.
+
+### Documented `pg_dump` command
+
+```bash
+pg_dump "$DATABASE_URL" --schema=public --data-only --inserts --column-inserts -f gameshelf-data.sql
+```
+
+PowerShell (if `pg_dump` is on PATH):
+
+```powershell
+pg_dump $env:DATABASE_URL --schema=public --data-only --inserts --column-inserts -f gameshelf-data.sql
+```
+
+Or call the full path directly:
+
+```powershell
+& "C:\Program Files\PostgreSQL\18\bin\pg_dump.exe" $env:DATABASE_URL --schema=public --data-only --inserts --column-inserts -f gameshelf-data.sql
+```
+
+Notes:
+
+- `--schema=public` exports only app tables (skips Prisma local internals).
+- `--data-only` skips schema DDL because migrations already ship in
+  `prisma/migrations/`.
+- `--inserts --column-inserts` produces plain `INSERT` statements that restore
+  cleanly into a database that already has the schema applied.
+- `npm run db:export` also strips PostgreSQL 18-only dump directives so the
+  file restores on PostgreSQL 16+.
+
+### Verify restore into a clean database
+
+Use a temporary Docker Postgres (does not touch your `prisma dev` database):
+
+```powershell
+docker run -d --name gameshelf-restore-test -e POSTGRES_PASSWORD=postgres -p 55432:5432 postgres:16
+# wait until ready, then:
+$env:DATABASE_URL = "postgres://postgres:postgres@localhost:55432/postgres?sslmode=disable"
+npx prisma migrate deploy
+docker cp gameshelf-data.sql gameshelf-restore-test:/tmp/gameshelf-data.sql
+docker exec gameshelf-restore-test psql -U postgres -v ON_ERROR_STOP=1 -f /tmp/gameshelf-data.sql
+@"
+SELECT COUNT(*) AS games FROM "Game";
+SELECT COUNT(*) AS sessions FROM "PlaySession";
+"@ | Set-Content -Encoding ascii .\tmp-verify.sql
+docker cp .\tmp-verify.sql gameshelf-restore-test:/tmp/tmp-verify.sql
+docker exec gameshelf-restore-test psql -U postgres -f /tmp/tmp-verify.sql
+Remove-Item .\tmp-verify.sql
+docker rm -f gameshelf-restore-test
+```
+
+Expected counts after seed + restore: **6 games**, **8 play sessions**.
+
+Include `gameshelf-data.sql` in the project zip submission alongside the code.
 
 ## Database Models (Current)
 
