@@ -1,0 +1,25 @@
+{
+  "name": "node-postgres",
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:1-22-bookworm",
+
+  "features": {
+    "ghcr.io/itsmechlark/features/postgresql:1": {
+      "version": "18"
+    }
+  },
+
+  // Optional: expose PG to your host
+  "forwardPorts": [5432],
+  "portsAttributes": {
+    "5432": { "label": "PostgreSQL", "onAutoForward": "silent" }
+  },
+
+  // Create your app DB once the container is up
+  "postCreateCommand": "psql -c \"CREATE DATABASE gameshelf;\" || true",
+
+  "remoteEnv": {
+    "DATABASE_URL": "postgresql://postgres@localhost:5432/gameshelf"
+  },
+
+  "remoteUser": "node"
+}
