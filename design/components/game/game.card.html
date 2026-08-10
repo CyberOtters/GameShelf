@@ -1,0 +1,21 @@
+<!-- @dsCard group="Components" viewport="700x320" name="GameCard, StatusPill, PriorityPill" subtitle="Backlog + wishlist pieces (intentional additions)" -->
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<div id="root" style="padding:20px;background:var(--surface-page);display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start"></div>
+<script type="text/babel">
+const { GameCard, StatusPill, PriorityPill } = window.GameShelfDesignSystem_8528f0;
+function Demo(){return (<>
+<GameCard title="Hollow Knight" platform="Switch" status="PLAYING" rating={5} />
+<GameCard title="Baldur's Gate 3" platform="PC" status="BACKLOG" />
+<div style={{display:'grid',gap:'10px'}}>
+<StatusPill status="BACKLOG" /><StatusPill status="PLAYING" /><StatusPill status="COMPLETED" /><StatusPill status="DROPPED" />
+</div>
+<div style={{display:'grid',gap:'10px'}}>
+<PriorityPill priority="HIGH" /><PriorityPill priority="MEDIUM" /><PriorityPill priority="LOW" />
+</div>
+</>);}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+</script>

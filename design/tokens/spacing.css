@@ -1,0 +1,16 @@
+:root{
+--space-1:0.35rem;
+--space-2:0.55rem;
+--space-3:0.85rem;
+--space-4:1.05rem;
+--space-5:1.6rem;
+--space-6:2rem;
+
+--radius-sm:4px;
+--radius-md:10px;
+--radius-lg:12px;
+--radius-xl:18px;
+
+--border-width:3px;
+--border-width-sm:2.5px;
+}

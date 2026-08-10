@@ -152,4 +152,4 @@ generated/
 
 # Prisma Compute deploy env (contains secrets)
 deploy.env
-design
+dev.ts

@@ -1,0 +1,287 @@
+{
+  "plugins": [
+    "react",
+    "import"
+  ],
+  "rules": {
+    "react/forbid-elements": [
+      "warn",
+      {
+        "forbid": []
+      }
+    ],
+    "no-restricted-imports": [
+      "warn",
+      {
+        "patterns": [
+          {
+            "group": [
+              "components/core/**",
+              "components/feedback/**",
+              "components/forms/**",
+              "components/game/**",
+              "components/navigation/**",
+              "ui_kits/web-app/**"
+            ],
+            "message": "Import design-system components from 'index.js', not component internals."
+          }
+        ]
+      }
+    ],
+    "no-restricted-syntax": [
+      "warn",
+      {
+        "selector": "Literal[value=/#[0-9a-fA-F]{3,8}\\b/]",
+        "message": "Raw hex color — use a design-system color token via var()."
+      },
+      {
+        "selector": "Literal[value=/\\b\\d+px\\b/]",
+        "message": "Raw px value — use a design-system spacing token via var()."
+      },
+      {
+        "selector": "Literal[value=/font-family\\s*:\\s*(?!['\\\"]?(?:Bungee|Karla))/i]",
+        "message": "Font not provided by the design system. Available: Bungee, Karla."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Button'] > JSXAttribute > JSXIdentifier[name!=/^(?:children|variant|disabled|as|href|onClick|style|key|ref|className|style|children)$/]",
+        "message": "<Button> doesn't accept that prop. Declared props: children, variant, disabled, as, href, onClick, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Button'] > JSXAttribute[name.name='variant'] > Literal[value!=/^(?:primary|ghost)$/]",
+        "message": "<Button> variant must be one of 'primary' | 'ghost'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Button'] > JSXAttribute[name.name='as'] > Literal[value!=/^(?:button|a)$/]",
+        "message": "<Button> as must be one of 'button' | 'a'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Card'] > JSXAttribute > JSXIdentifier[name!=/^(?:children|ridges|style|key|ref|className|style|children)$/]",
+        "message": "<Card> doesn't accept that prop. Declared props: children, ridges, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='GameCard'] > JSXAttribute > JSXIdentifier[name!=/^(?:title|platform|status|rating|coverUrl|key|ref|className|style|children)$/]",
+        "message": "<GameCard> doesn't accept that prop. Declared props: title, platform, status, rating, coverUrl."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='GameCard'] > JSXAttribute[name.name='status'] > Literal[value!=/^(?:BACKLOG|PLAYING|COMPLETED|DROPPED)$/]",
+        "message": "<GameCard> status must be one of 'BACKLOG' | 'PLAYING' | 'COMPLETED' | 'DROPPED'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='MessageBanner'] > JSXAttribute > JSXIdentifier[name!=/^(?:tone|children|key|ref|className|style|children)$/]",
+        "message": "<MessageBanner> doesn't accept that prop. Declared props: tone, children."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='MessageBanner'] > JSXAttribute[name.name='tone'] > Literal[value!=/^(?:error|ok)$/]",
+        "message": "<MessageBanner> tone must be one of 'error' | 'ok'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='PlayerBadge'] > JSXAttribute > JSXIdentifier[name!=/^(?:name|eyebrow|key|ref|className|style|children)$/]",
+        "message": "<PlayerBadge> doesn't accept that prop. Declared props: name, eyebrow."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='PriorityPill'] > JSXAttribute > JSXIdentifier[name!=/^(?:priority|key|ref|className|style|children)$/]",
+        "message": "<PriorityPill> doesn't accept that prop. Declared props: priority."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='PriorityPill'] > JSXAttribute[name.name='priority'] > Literal[value!=/^(?:HIGH|MEDIUM|LOW)$/]",
+        "message": "<PriorityPill> priority must be one of 'HIGH' | 'MEDIUM' | 'LOW'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='StatBox'] > JSXAttribute > JSXIdentifier[name!=/^(?:label|value|key|ref|className|style|children)$/]",
+        "message": "<StatBox> doesn't accept that prop. Declared props: label, value."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='StatusPill'] > JSXAttribute > JSXIdentifier[name!=/^(?:status|key|ref|className|style|children)$/]",
+        "message": "<StatusPill> doesn't accept that prop. Declared props: status."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='StatusPill'] > JSXAttribute[name.name='status'] > Literal[value!=/^(?:BACKLOG|PLAYING|COMPLETED|DROPPED)$/]",
+        "message": "<StatusPill> status must be one of 'BACKLOG' | 'PLAYING' | 'COMPLETED' | 'DROPPED'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='TabGroup'] > JSXAttribute > JSXIdentifier[name!=/^(?:tabs|active|onChange|key|ref|className|style|children)$/]",
+        "message": "<TabGroup> doesn't accept that prop. Declared props: tabs, active, onChange."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='TextField'] > JSXAttribute > JSXIdentifier[name!=/^(?:label|type|value|onChange|placeholder|id|key|ref|className|style|children)$/]",
+        "message": "<TextField> doesn't accept that prop. Declared props: label, type, value, onChange, placeholder, id."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='TextField'] > JSXAttribute[name.name='type'] > Literal[value!=/^(?:text|email|password|number)$/]",
+        "message": "<TextField> type must be one of 'text' | 'email' | 'password' | 'number'."
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": [
+        "**/index.js"
+      ],
+      "rules": {
+        "no-restricted-imports": "off"
+      }
+    }
+  ],
+  "x-omelette": {
+    "components": {
+      "Button": {
+        "replaces": []
+      },
+      "Card": {
+        "replaces": []
+      },
+      "GameCard": {
+        "replaces": []
+      },
+      "MessageBanner": {
+        "replaces": []
+      },
+      "PlayerBadge": {
+        "replaces": []
+      },
+      "PriorityPill": {
+        "replaces": []
+      },
+      "StatBox": {
+        "replaces": []
+      },
+      "StatusPill": {
+        "replaces": []
+      },
+      "TabGroup": {
+        "replaces": []
+      },
+      "TextField": {
+        "replaces": []
+      }
+    },
+    "tokens": [
+      "--accent-primary",
+      "--accent-secondary",
+      "--accent-tertiary",
+      "--border-default",
+      "--border-width",
+      "--border-width-sm",
+      "--card",
+      "--dot-grid-image",
+      "--dot-grid-size",
+      "--duration-drop",
+      "--duration-press",
+      "--ease-drop",
+      "--error-bg",
+      "--font-body",
+      "--font-display",
+      "--gold",
+      "--ink",
+      "--ok-bg",
+      "--paper",
+      "--priority-high",
+      "--priority-low",
+      "--priority-medium",
+      "--radius-lg",
+      "--radius-md",
+      "--radius-sm",
+      "--radius-xl",
+      "--shadow-color",
+      "--shadow-lg",
+      "--shadow-sm",
+      "--space-1",
+      "--space-2",
+      "--space-3",
+      "--space-4",
+      "--space-5",
+      "--space-6",
+      "--status-backlog",
+      "--status-completed",
+      "--status-dropped",
+      "--status-playing",
+      "--surface-card",
+      "--surface-field",
+      "--surface-page",
+      "--teal",
+      "--text-body",
+      "--text-body-sm",
+      "--text-caption",
+      "--text-display-lg",
+      "--text-display-md",
+      "--text-display-sm",
+      "--text-eyebrow",
+      "--text-on-tomato",
+      "--text-primary",
+      "--tomato",
+      "--tracking-eyebrow",
+      "--tracking-wide",
+      "--weight-black",
+      "--weight-bold",
+      "--weight-regular",
+      "--weight-semibold",
+      "--white"
+    ],
+    "tokenKinds": {
+      "--ink": "color",
+      "--paper": "color",
+      "--card": "color",
+      "--tomato": "color",
+      "--teal": "color",
+      "--gold": "color",
+      "--white": "color",
+      "--error-bg": "color",
+      "--ok-bg": "color",
+      "--surface-page": "color",
+      "--surface-card": "color",
+      "--surface-field": "color",
+      "--text-primary": "font",
+      "--text-on-tomato": "font",
+      "--border-default": "color",
+      "--accent-primary": "color",
+      "--accent-secondary": "color",
+      "--accent-tertiary": "color",
+      "--status-backlog": "color",
+      "--status-playing": "color",
+      "--status-completed": "color",
+      "--status-dropped": "color",
+      "--priority-high": "color",
+      "--priority-medium": "color",
+      "--priority-low": "color",
+      "--shadow-color": "shadow",
+      "--shadow-lg": "shadow",
+      "--shadow-sm": "shadow",
+      "--font-display": "font",
+      "--font-body": "font",
+      "--text-display-lg": "font",
+      "--text-display-md": "font",
+      "--text-display-sm": "font",
+      "--text-eyebrow": "font",
+      "--text-body": "font",
+      "--text-body-sm": "font",
+      "--text-caption": "font",
+      "--tracking-eyebrow": "font",
+      "--tracking-wide": "font",
+      "--weight-regular": "font",
+      "--weight-semibold": "font",
+      "--weight-bold": "font",
+      "--weight-black": "font",
+      "--space-1": "spacing",
+      "--space-2": "spacing",
+      "--space-3": "spacing",
+      "--space-4": "spacing",
+      "--space-5": "spacing",
+      "--space-6": "spacing",
+      "--radius-sm": "radius",
+      "--radius-md": "radius",
+      "--radius-lg": "radius",
+      "--radius-xl": "radius",
+      "--border-width": "spacing",
+      "--border-width-sm": "spacing",
+      "--ease-drop": "other",
+      "--duration-drop": "other",
+      "--duration-press": "other",
+      "--dot-grid-image": "color",
+      "--dot-grid-size": "spacing"
+    },
+    "fontFamilies": [
+      "Bungee",
+      "Karla"
+    ]
+  }
+}

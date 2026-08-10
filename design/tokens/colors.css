@@ -1,0 +1,34 @@
+:root{
+/* base palette — from src/client/shared.scss */
+--ink:#1a1512;
+--paper:#faf1de;
+--card:#fffaf0;
+--tomato:#ff5d40;
+--teal:#1fa596;
+--gold:#ffc53d;
+--white:#ffffff;
+--error-bg:#ffd9d2;
+--ok-bg:#d2f5ef;
+
+/* semantic aliases */
+--surface-page:var(--paper);
+--surface-card:var(--card);
+--surface-field:var(--white);
+--text-primary:var(--ink);
+--text-on-tomato:var(--card);
+--border-default:var(--ink);
+--accent-primary:var(--tomato);
+--accent-secondary:var(--teal);
+--accent-tertiary:var(--gold);
+--status-backlog:var(--teal);
+--status-playing:var(--gold);
+--status-completed:#4caf6d;
+--status-dropped:#9a8f86;
+--priority-high:var(--tomato);
+--priority-medium:var(--gold);
+--priority-low:var(--teal);
+
+--shadow-color:var(--ink);
+--shadow-lg:6px 6px 0 var(--shadow-color);
+--shadow-sm:3px 3px 0 var(--shadow-color);
+}

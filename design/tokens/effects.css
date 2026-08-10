@@ -1,0 +1,10 @@
+:root{
+--ease-drop:cubic-bezier(0.2, 1.4, 0.4, 1); /* @kind other */
+--duration-drop:0.55s; /* @kind other */
+--duration-press:0.1s; /* @kind other */
+
+--dot-grid-image:radial-gradient(var(--ink) 1px, transparent 1.4px);
+--dot-grid-size:26px 26px;
+}
+@keyframes gs-drop-in{from{translate:0 -40px;opacity:0}to{translate:0 0;opacity:1}}
+@keyframes gs-bob{0%,100%{translate:0 0}50%{translate:0 -14px}}

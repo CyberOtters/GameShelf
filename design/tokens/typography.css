@@ -1,0 +1,21 @@
+@import url('https://fonts.googleapis.com/css2?family=Bungee&family=Karla:wght@400;600;700;800&display=swap');
+:root{
+--font-display:'Bungee', cursive;
+--font-body:'Karla', sans-serif;
+
+--text-display-lg:clamp(2rem, 7vw, 2.6rem);
+--text-display-md:1.15rem;
+--text-display-sm:0.95rem;
+--text-eyebrow:0.7rem;
+--text-body:1rem;
+--text-body-sm:0.85rem;
+--text-caption:0.72rem;
+
+--tracking-eyebrow:0.18em;
+--tracking-wide:0.12em;
+
+--weight-regular:400;
+--weight-semibold:600;
+--weight-bold:700;
+--weight-black:800;
+}
