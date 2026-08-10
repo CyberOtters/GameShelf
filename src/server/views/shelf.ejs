@@ -1,0 +1,89 @@
+<%- include('partials/header', {
+  title: 'GameShelf',
+  stageId: 'stage',
+  tagline: null
+}) %>
+
+<section>
+  <button type="button" id="open-add-form">Add Game</button>
+</section>
+
+<section id="game-form-container" hidden>
+  <form id="game-form">
+    <h2 id="game-form-title">Add Game</h2>
+
+    <label>
+      Title
+      <input type="text" name="title" required maxlength="100">
+    </label>
+
+    <label>
+      Platform
+      <select name="platform" required>
+        <option value="">Choose a platform</option>
+        <option value="PC">PC</option>
+        <option value="PS5">PS5</option>
+        <option value="Xbox">Xbox</option>
+        <option value="Nintendo Switch">Nintendo Switch</option>
+      </select>
+    </label>
+
+    <label>
+      Status
+      <select name="status" required>
+        <option value="WISHLIST">Wishlist</option>
+        <option value="BACKLOG" selected>Backlog</option>
+        <option value="PLAYING">Playing</option>
+        <option value="COMPLETED">Completed</option>
+        <option value="DROPPED">Dropped</option>
+      </select>
+    </label>
+
+    <fieldset>
+      <legend>Priority</legend>
+
+      <label>
+        <input type="radio" name="priority" value="HIGH">
+        High
+      </label>
+
+      <label>
+        <input type="radio" name="priority" value="MEDIUM">
+        Medium
+      </label>
+
+      <label>
+        <input type="radio" name="priority" value="LOW">
+        Low
+      </label>
+    </fieldset>
+
+    <label>
+      Rating
+      <input type="number" name="rating" min="1" max="10">
+    </label>
+
+    <label>
+      <input type="checkbox" name="archived">
+      Archived
+    </label>
+
+    <label>
+      Notes
+      <textarea name="notes" maxlength="500"></textarea>
+    </label>
+
+    <div>
+      <button type="submit">Save Game</button>
+      <button type="button" id="cancel-game-form">Cancel</button>
+    </div>
+  </form>
+</section>
+
+<p id="shelf-message">Loading games...</p>
+
+<section class="game-grid" id="game-grid"></section>
+
+<script type="module" src="<%= assets.js %>"></script>
+
+<%- include('partials/footer') %>

@@ -7,6 +7,7 @@ import { auth } from "./lib/auth.ts";
 import { errorHandler } from "./lib/errors.ts";
 import { gamesRouter } from "./routes/games.ts";
 import { requireAuth } from "./lib/requireAuth.ts";
+import { shelfRouter } from "./routes/shelf.ts";
 
 const app = express();
 const port = process.env.PORT ?? 3000;
@@ -59,6 +60,8 @@ app.get("/api/me", requireAuth, async (req, res) => {
   });
   res.json(session);
 });
+
+app.use("/shelf", shelfRouter);
 
 app.use("/api/games", gamesRouter);
 
