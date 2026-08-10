@@ -31,6 +31,7 @@ const client = {
     "src/client/home.ts",
     "src/client/auth.ts",
     "src/client/shelf.ts",
+    "src/client/game-log.ts",
   ],
   outdir: "dist/client/assets",
   bundle: true,

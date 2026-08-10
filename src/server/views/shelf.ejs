@@ -98,6 +98,41 @@
   </form>
 </dialog>
 
+<dialog class="card form-modal" id="session-form-dialog" aria-labelledby="session-form-title">
+  <div class="ridges" aria-hidden="true">
+    <span></span><span></span><span></span><span></span>
+  </div>
+
+  <form id="session-form">
+    <div class="form-heading">
+      <h2 id="session-form-title">Log Session</h2>
+      <button type="button" class="close-modal" id="close-session-form" aria-label="Close">×</button>
+    </div>
+
+    <p class="session-game-label" id="session-game-label"></p>
+
+    <div class="field">
+      <label for="session-hours">Hours played</label>
+      <input id="session-hours" type="number" name="hours" required min="0.1" max="999.9" step="0.1" placeholder="2.5">
+    </div>
+
+    <div class="field">
+      <label for="session-date">Session date</label>
+      <input id="session-date" type="date" name="sessionDate" required>
+    </div>
+
+    <div class="field">
+      <label for="session-notes">Notes</label>
+      <textarea id="session-notes" name="notes" rows="3" maxlength="500" placeholder="Optional — what did you play?"></textarea>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn" id="save-session-button">Log Session</button>
+      <button type="button" class="btn ghost" id="cancel-session-form">Cancel</button>
+    </div>
+  </form>
+</dialog>
+
 <p id="shelf-message" class="shelf-message">Loading games…</p>
 
 <section class="game-grid" id="game-grid"></section>

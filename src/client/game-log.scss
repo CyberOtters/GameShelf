@@ -1,0 +1,248 @@
+@use "tokens" as *;
+
+body {
+  align-items: start;
+}
+
+.stage {
+  width: min(760px, 100%);
+  animation: drop-in $drop-in both;
+}
+
+.log-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.4rem;
+}
+
+.log-heading {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.back-link {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--ink);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.log-game-title {
+  font-family: "Bungee", cursive;
+  font-size: 1.35rem;
+  line-height: 1.2;
+}
+
+.log-game-platform {
+  font-weight: 600;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.log-actions {
+  display: flex;
+  gap: 0.7rem;
+
+  .btn {
+    margin-top: 0;
+    padding: 0.7rem 1.2rem;
+    font-size: 0.9rem;
+  }
+}
+
+.log-message {
+  font-family: "Bungee", cursive;
+  font-size: 0.95rem;
+  text-align: center;
+  padding: 1.2rem 1rem;
+  background: var(--card);
+  border: 3px solid var(--ink);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  margin-bottom: 1.2rem;
+
+  &[hidden] {
+    display: none;
+  }
+}
+
+.log-summary {
+  margin-bottom: 1.4rem;
+  padding: 1.2rem 1.4rem;
+  text-align: center;
+}
+
+.log-summary-label {
+  font-weight: 800;
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.log-summary-value {
+  font-family: "Bungee", cursive;
+  font-size: 2rem;
+  margin-top: 0.35rem;
+}
+
+.session-log {
+  display: grid;
+  gap: 0.9rem;
+
+  &[hidden] {
+    display: none;
+  }
+}
+
+.session-entry {
+  background: var(--card);
+  border: 3px solid var(--ink);
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+  padding: 1rem 1.1rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.session-entry-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.session-entry-date {
+  font-family: "Bungee", cursive;
+  font-size: 0.85rem;
+}
+
+.session-entry-hours {
+  font-weight: 800;
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.25rem 0.5rem;
+  border: 2px solid var(--ink);
+  border-radius: 4px;
+  background: var(--gold);
+  white-space: nowrap;
+}
+
+.session-entry-notes {
+  font-size: 0.88rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.form-modal {
+  width: min(560px, calc(100vw - 2rem));
+  max-width: none;
+  max-height: calc(100vh - 3rem);
+  margin: auto;
+  padding: 0;
+  color: var(--ink);
+  overflow: auto;
+
+  &[open] {
+    animation: drop-in $drop-in both;
+  }
+
+  &::backdrop {
+    background: rgba(26, 21, 18, 0.55);
+  }
+
+  form {
+    padding: 1.5rem 1.5rem 0;
+    display: grid;
+    gap: 0.95rem;
+  }
+
+  h2 {
+    font-family: "Bungee", cursive;
+    font-size: 1.1rem;
+  }
+
+  .form-actions {
+    position: sticky;
+    bottom: 0;
+    background: var(--card);
+    padding: 0.6rem 0 1.5rem;
+  }
+}
+
+.form-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.close-modal {
+  font-family: "Bungee", cursive;
+  font-size: 1.1rem;
+  line-height: 1;
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  color: var(--ink);
+  background: var(--card);
+  border: 2.5px solid var(--ink);
+  border-radius: 8px;
+  box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
+  @include pressable;
+}
+
+.field {
+  display: grid;
+  gap: 0.35rem;
+
+  label {
+    font-weight: 800;
+    font-size: 0.78rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  input,
+  textarea {
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 0.7rem 0.85rem;
+    border: 2.5px solid var(--ink);
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: var(--shadow-sm);
+    outline: none;
+
+    &:focus {
+      translate: -2px -2px;
+      box-shadow: 5px 5px 0 var(--teal);
+    }
+  }
+
+  textarea {
+    resize: vertical;
+  }
+}
+
+.form-actions {
+  display: flex;
+  gap: 0.7rem;
+
+  .btn {
+    flex: 1;
+    margin-top: 0;
+  }
+}
