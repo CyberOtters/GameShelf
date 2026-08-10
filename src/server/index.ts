@@ -7,6 +7,7 @@ import { auth } from "./lib/auth.ts";
 import { errorHandler } from "./lib/errors.ts";
 import { gamesRouter } from "./routes/games.ts";
 import { requireAuth } from "./lib/requireAuth.ts";
+import { redirectToShelfIfSignedIn } from "./lib/pageAuth.ts";
 import { shelfRouter } from "./routes/shelf.ts";
 
 const app = express();
@@ -36,7 +37,7 @@ app.use(express.json());
 app.use(express.static(publicDir));
 app.use(express.static(clientDir));
 
-app.get("/", (_req, res) => {
+app.get("/", redirectToShelfIfSignedIn, (_req, res) => {
   res.render("index", {
     assets: {
       js: "/assets/home.js",
@@ -45,7 +46,7 @@ app.get("/", (_req, res) => {
   });
 });
 
-app.get(["/login", "/register"], (_req, res) => {
+app.get(["/login", "/register"], redirectToShelfIfSignedIn, (_req, res) => {
   res.render("auth", {
     assets: {
       js: "/assets/auth.js",

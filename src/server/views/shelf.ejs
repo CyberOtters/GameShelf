@@ -1,89 +1,105 @@
 <%- include('partials/header', {
-  title: 'GameShelf',
+  title: 'GameShelf — Your Shelf',
   stageId: 'stage',
   tagline: null
 }) %>
 
-<section>
-  <button type="button" id="open-add-form">Add Game</button>
+<section class="shelf-bar">
+  <div class="badge">
+    <div class="avatar" aria-hidden="true"><%= user.name.trim().charAt(0).toUpperCase() %></div>
+    <div class="who">
+      <span class="label">Now playing</span>
+      <span class="name"><%= user.name %></span>
+    </div>
+  </div>
+
+  <div class="shelf-actions">
+    <button type="button" class="btn" id="open-add-form">Add Game</button>
+    <button type="button" class="btn ghost" id="sign-out">Sign Out</button>
+  </div>
 </section>
 
-<section id="game-form-container" hidden>
+<dialog class="card form-modal" id="game-form-dialog" aria-labelledby="game-form-title">
+  <div class="ridges" aria-hidden="true">
+    <span></span><span></span><span></span><span></span>
+  </div>
+
   <form id="game-form">
-    <h2 id="game-form-title">Add Game</h2>
+    <div class="form-heading">
+      <h2 id="game-form-title">Add Game</h2>
+      <button type="button" class="close-modal" id="close-game-form" aria-label="Close">×</button>
+    </div>
 
-    <label>
-      Title
-      <input type="text" name="title" required maxlength="100">
-    </label>
+    <div class="field">
+      <label for="game-title">Title</label>
+      <input id="game-title" type="text" name="title" required maxlength="100" autofocus placeholder="Super Mario Bros. 3">
+    </div>
 
-    <label>
-      Platform
-      <select name="platform" required>
+    <div class="field">
+      <label for="game-platform">Platform</label>
+      <select id="game-platform" name="platform" required>
         <option value="">Choose a platform</option>
         <option value="PC">PC</option>
         <option value="PS5">PS5</option>
         <option value="Xbox">Xbox</option>
         <option value="Nintendo Switch">Nintendo Switch</option>
       </select>
-    </label>
+    </div>
 
-    <label>
-      Status
-      <select name="status" required>
+    <div class="field">
+      <label for="game-status">Status</label>
+      <select id="game-status" name="status" required>
         <option value="WISHLIST">Wishlist</option>
         <option value="BACKLOG" selected>Backlog</option>
         <option value="PLAYING">Playing</option>
         <option value="COMPLETED">Completed</option>
         <option value="DROPPED">Dropped</option>
       </select>
-    </label>
+    </div>
 
-    <fieldset>
+    <fieldset class="field priority-field">
       <legend>Priority</legend>
 
-      <label>
+      <label class="choice">
         <input type="radio" name="priority" value="HIGH">
         High
       </label>
 
-      <label>
+      <label class="choice">
         <input type="radio" name="priority" value="MEDIUM">
         Medium
       </label>
 
-      <label>
+      <label class="choice">
         <input type="radio" name="priority" value="LOW">
         Low
       </label>
     </fieldset>
 
-    <label>
-      Rating
-      <input type="number" name="rating" min="1" max="10">
-    </label>
+    <div class="field">
+      <label for="game-rating">Rating</label>
+      <input id="game-rating" type="number" name="rating" min="1" max="10" placeholder="1–10">
+    </div>
 
-    <label>
+    <label class="choice">
       <input type="checkbox" name="archived">
       Archived
     </label>
 
-    <label>
-      Notes
-      <textarea name="notes" maxlength="500"></textarea>
-    </label>
+    <div class="field">
+      <label for="game-notes">Notes</label>
+      <textarea id="game-notes" name="notes" rows="3" maxlength="500"></textarea>
+    </div>
 
-    <div>
-      <button type="submit">Save Game</button>
-      <button type="button" id="cancel-game-form">Cancel</button>
+    <div class="form-actions">
+      <button type="submit" class="btn">Save Game</button>
+      <button type="button" class="btn ghost" id="cancel-game-form">Cancel</button>
     </div>
   </form>
-</section>
+</dialog>
 
-<p id="shelf-message">Loading games...</p>
+<p id="shelf-message" class="shelf-message">Loading games…</p>
 
 <section class="game-grid" id="game-grid"></section>
-
-<script type="module" src="<%= assets.js %>"></script>
 
 <%- include('partials/footer') %>

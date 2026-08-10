@@ -16,6 +16,20 @@ type Game = {
   notes: string | null;
 };
 
+const STATUS_LABELS: Record<GameStatus, string> = {
+  WISHLIST: "Wishlist",
+  BACKLOG: "Backlog",
+  PLAYING: "Playing",
+  COMPLETED: "Completed",
+  DROPPED: "Dropped",
+};
+
+const PRIORITY_LABELS: Record<Priority, string> = {
+  HIGH: "High",
+  MEDIUM: "Medium",
+  LOW: "Low",
+};
+
 function getRequiredElement<T extends Element>(selector: string): T {
   const element = document.querySelector<T>(selector);
 
@@ -29,20 +43,23 @@ function getRequiredElement<T extends Element>(selector: string): T {
 const gameGrid = getRequiredElement<HTMLElement>("#game-grid");
 const shelfMessage = getRequiredElement<HTMLElement>("#shelf-message");
 const addGameButton = getRequiredElement<HTMLButtonElement>("#open-add-form");
-const formContainer = getRequiredElement<HTMLElement>("#game-form-container");
+const signOutButton = getRequiredElement<HTMLButtonElement>("#sign-out");
+const gameFormDialog =
+  getRequiredElement<HTMLDialogElement>("#game-form-dialog");
 const gameForm = getRequiredElement<HTMLFormElement>("#game-form");
 
 const cancelGameFormButton =
   getRequiredElement<HTMLButtonElement>("#cancel-game-form");
+const closeGameFormButton =
+  getRequiredElement<HTMLButtonElement>("#close-game-form");
 
 function openGameForm(): void {
   gameForm.reset();
-  formContainer.hidden = false;
+  gameFormDialog.showModal();
 }
 
 function closeGameForm(): void {
-  gameForm.reset();
-  formContainer.hidden = true;
+  gameFormDialog.close();
 }
 
 // Load games from /api/games
@@ -59,21 +76,62 @@ async function loadGames(): Promise<void> {
 function renderGames(games: Game[]): void {
   gameGrid.replaceChildren();
   if (games.length === 0) {
-    shelfMessage.textContent = "Your shelf is empty.";
+    shelfMessage.textContent = "Your shelf is empty. Add a game to start.";
+    shelfMessage.hidden = false;
     return;
   }
-  shelfMessage.textContent = "";
+  shelfMessage.hidden = true;
   for (const game of games) {
     const card = createGameCard(game);
     gameGrid.append(card);
   }
 }
 
-// Helper function for <p>
-function createParagraph(text: string): HTMLParagraphElement {
-  const paragraph = document.createElement("p");
-  paragraph.textContent = text;
-  return paragraph;
+function element<K extends keyof HTMLElementTagNameMap>(
+  tag: K,
+  className?: string,
+  text?: string,
+): HTMLElementTagNameMap[K] {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text) node.textContent = text;
+  return node;
+}
+
+/** The cover art, or a striped cartridge label carrying the title's initial. */
+function createGameCover(game: Game): HTMLElement {
+  const cover = element("div", "game-cover");
+
+  if (game.coverUrl) {
+    const image = document.createElement("img");
+    image.src = game.coverUrl;
+    image.alt = "";
+    image.loading = "lazy";
+    cover.append(image);
+  } else {
+    cover.classList.add("empty");
+    cover.append(
+      element("span", "initial", game.title.trim().charAt(0).toUpperCase()),
+    );
+  }
+
+  return cover;
+}
+
+function createStatusPill(status: GameStatus): HTMLElement {
+  const pill = element("span", "status-pill", STATUS_LABELS[status] ?? status);
+  pill.dataset.status = status;
+  return pill;
+}
+
+function createPriorityPill(priority: Priority): HTMLElement {
+  const pill = element("span", "priority-pill");
+  pill.dataset.priority = priority;
+  pill.append(
+    element("span", "dot"),
+    element("span", undefined, PRIORITY_LABELS[priority] ?? priority),
+  );
+  return pill;
 }
 
 function createGameCard(game: Game): HTMLElement {
@@ -82,42 +140,47 @@ function createGameCard(game: Game): HTMLElement {
   card.dataset.gameId = String(game.id);
   card.dataset.status = game.status;
 
-  const coverImage = document.createElement("img");
-  coverImage.className = "game-cover";
-  if (game.coverUrl) {
-    coverImage.src = game.coverUrl;
-  } else {
-    coverImage.src = "/images/placeholder-cover.png";
+  const body = element("div", "game-card-body");
+
+  const title = element("h2", "game-title", game.title);
+  const platform = element("p", "game-platform", game.platform);
+
+  const meta = element("div", "game-meta");
+  meta.append(createStatusPill(game.status));
+  if (game.rating !== null) {
+    meta.append(element("span", "game-rating", `★ ${game.rating}`));
   }
 
-  const addedDate = new Date(game.addedAt);
+  body.append(title, platform, meta);
 
-  const title = document.createElement("h2");
-  title.textContent = game.title;
+  if (game.priority || game.archived) {
+    const tags = element("div", "game-tags");
+    if (game.priority) tags.append(createPriorityPill(game.priority));
+    if (game.archived) tags.append(element("span", "archived-tag", "Archived"));
+    body.append(tags);
+  }
+
+  if (game.notes) {
+    body.append(element("p", "game-notes", game.notes));
+  }
 
   const editButton = document.createElement("button");
   editButton.type = "button";
   editButton.className = "edit-game-button";
   editButton.textContent = "Edit";
 
-  card.append(
-    coverImage,
-    title,
-    createParagraph(`Platform: ${game.platform}`),
-    createParagraph(`Status: ${game.status}`),
-    createParagraph(`Priority: ${game.priority ?? "None"}`),
-    createParagraph(`Rating: ${game.rating ?? "Not rated"}`),
-    createParagraph(`Archived: ${game.archived ? "Yes" : "No"}`),
-    createParagraph(`Added: ${addedDate.toLocaleDateString()}`),
+  const foot = element("div", "game-foot");
+  foot.append(
+    element(
+      "span",
+      "game-added",
+      `Added ${new Date(game.addedAt).toLocaleDateString()}`,
+    ),
+    editButton,
   );
+  body.append(foot);
 
-  if (game.notes) {
-    const notes = document.createElement("p");
-    notes.textContent = `Notes: ${game.notes}`;
-    card.append(notes);
-  }
-
-  card.append(editButton);
+  card.append(createGameCover(game), body);
 
   return card;
 }
@@ -161,10 +224,27 @@ async function handleGameSubmit(event: SubmitEvent): Promise<void> {
 function handleLoadError(error: unknown): void {
   console.error(error);
   shelfMessage.textContent = "Could not load your games.";
+  shelfMessage.hidden = false;
+}
+
+async function handleSignOut(): Promise<void> {
+  await fetch("/api/auth/sign-out", { method: "POST" });
+  location.href = "/";
 }
 
 addGameButton.addEventListener("click", openGameForm);
 cancelGameFormButton.addEventListener("click", closeGameForm);
+closeGameFormButton.addEventListener("click", closeGameForm);
 gameForm.addEventListener("submit", handleGameSubmit);
+signOutButton.addEventListener("click", handleSignOut);
+
+// A click landing on the dialog itself, rather than the form filling it, is a
+// click on the backdrop.
+gameFormDialog.addEventListener("click", (event) => {
+  if (event.target === gameFormDialog) closeGameForm();
+});
+
+// Covers Escape too, which closes the dialog without going through our buttons.
+gameFormDialog.addEventListener("close", () => gameForm.reset());
 
 loadGames().catch(handleLoadError);

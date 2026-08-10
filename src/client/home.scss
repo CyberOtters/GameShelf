@@ -23,48 +23,6 @@
   gap: 1.05rem;
 }
 
-// player badge
-.badge {
-  display: flex;
-  align-items: center;
-  gap: 0.9rem;
-}
-
-.avatar {
-  font-family: "Bungee", cursive;
-  font-size: 1.5rem;
-  color: var(--card);
-  background: var(--tomato);
-  border: 3px solid var(--ink);
-  border-radius: 12px;
-  box-shadow: var(--shadow-sm);
-  width: 58px;
-  height: 58px;
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-}
-
-.who {
-  display: grid;
-  gap: 0.15rem;
-  min-width: 0;
-
-  .label {
-    font-weight: 800;
-    font-size: 0.7rem;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: var(--teal);
-  }
-  .name {
-    font-family: "Bungee", cursive;
-    font-size: 1.15rem;
-    line-height: 1.15;
-    overflow-wrap: anywhere;
-  }
-}
-
 .stat {
   display: grid;
   gap: 0.3rem;
@@ -84,26 +42,5 @@
     font-weight: 600;
     font-size: 1rem;
     overflow-wrap: anywhere;
-  }
-}
-
-.btn {
-  font-family: "Bungee", cursive;
-  font-size: 1rem;
-  text-align: center;
-  text-decoration: none;
-  display: block;
-  padding: 0.85rem;
-  margin-top: 0.3rem;
-  color: var(--card);
-  background: var(--tomato);
-  border: 3px solid var(--ink);
-  border-radius: 12px;
-  box-shadow: var(--shadow-sm);
-  @include pressable;
-
-  &.ghost {
-    color: var(--ink);
-    background: var(--card);
   }
 }
