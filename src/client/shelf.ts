@@ -52,19 +52,72 @@ const cancelGameFormButton =
   getRequiredElement<HTMLButtonElement>("#cancel-game-form");
 const closeGameFormButton =
   getRequiredElement<HTMLButtonElement>("#close-game-form");
+const gameFormTitle = getRequiredElement<HTMLElement>("#game-form-title");
+const saveGameButton = getRequiredElement<HTMLButtonElement>("#save-game-button");
+
+/** The game being edited, or null when the form is adding a new one. */
+let editingGameId: number | null = null;
+
+function field<T extends Element>(name: string): T {
+  return getRequiredElement<T>(`#game-form [name="${name}"]`);
+}
+
+const titleField = field<HTMLInputElement>("title");
+const platformField = field<HTMLSelectElement>("platform");
+const statusField = field<HTMLSelectElement>("status");
+const ratingField = field<HTMLInputElement>("rating");
+const archivedField = field<HTMLInputElement>("archived");
+const notesField = field<HTMLTextAreaElement>("notes");
 
 function openGameForm(): void {
+  editingGameId = null;
   gameForm.reset();
+  gameFormTitle.textContent = "Add Game";
+  saveGameButton.textContent = "Save Game";
   gameFormDialog.showModal();
+}
+
+function openEditGameForm(game: Game): void {
+  editingGameId = game.id;
+  gameForm.reset();
+  gameFormTitle.textContent = "Edit Game";
+  saveGameButton.textContent = "Save Changes";
+
+  titleField.value = game.title;
+  selectValue(platformField, game.platform);
+  statusField.value = game.status;
+  ratingField.value = game.rating === null ? "" : String(game.rating);
+  archivedField.checked = game.archived;
+  notesField.value = game.notes ?? "";
+
+  for (const radio of gameForm.querySelectorAll<HTMLInputElement>(
+    'input[name="priority"]',
+  )) {
+    radio.checked = radio.value === game.priority;
+  }
+
+  gameFormDialog.showModal();
+}
+
+/**
+ * Platforms saved through the API aren't limited to the four in the dropdown,
+ * so add a one-off option rather than silently blanking the field.
+ */
+function selectValue(select: HTMLSelectElement, value: string): void {
+  const known = [...select.options].some((option) => option.value === value);
+  if (!known) select.add(new Option(value, value));
+  select.value = value;
 }
 
 function closeGameForm(): void {
   gameFormDialog.close();
 }
 
-// Load games from /api/games
+// Load games from /api/games. `archived=all` because the shelf shows the whole
+// collection — the endpoint hides archived rows otherwise, which would make a
+// game vanish the moment it was archived from the edit form.
 async function loadGames(): Promise<void> {
-  const response = await fetch("/api/games");
+  const response = await fetch("/api/games?archived=all");
 
   if (!response.ok) {
     throw new Error(`Failed to load games: ${response.status}`);
@@ -168,6 +221,8 @@ function createGameCard(game: Game): HTMLElement {
   editButton.type = "button";
   editButton.className = "edit-game-button";
   editButton.textContent = "Edit";
+  editButton.setAttribute("aria-label", `Edit ${game.title}`);
+  editButton.addEventListener("click", () => openEditGameForm(game));
 
   const foot = element("div", "game-foot");
   foot.append(
@@ -185,7 +240,7 @@ function createGameCard(game: Game): HTMLElement {
   return card;
 }
 
-// add game
+// add game, or save an edit when the form was opened from a card
 async function handleGameSubmit(event: SubmitEvent): Promise<void> {
   event.preventDefault();
 
@@ -205,16 +260,23 @@ async function handleGameSubmit(event: SubmitEvent): Promise<void> {
     notes: notesValue ? String(notesValue) : null,
   };
 
-  const response = await fetch("/api/games", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
+  const editing = editingGameId !== null;
+
+  const response = await fetch(
+    editing ? `/api/games/${editingGameId}` : "/api/games",
+    {
+      method: editing ? "PATCH" : "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(gameInput),
     },
-    body: JSON.stringify(gameInput),
-  });
+  );
 
   if (!response.ok) {
-    throw new Error(`Failed to create game: ${response.status}`);
+    throw new Error(
+      `Failed to ${editing ? "update" : "create"} game: ${response.status}`,
+    );
   }
 
   closeGameForm();
@@ -245,6 +307,9 @@ gameFormDialog.addEventListener("click", (event) => {
 });
 
 // Covers Escape too, which closes the dialog without going through our buttons.
-gameFormDialog.addEventListener("close", () => gameForm.reset());
+gameFormDialog.addEventListener("close", () => {
+  gameForm.reset();
+  editingGameId = null;
+});
 
 loadGames().catch(handleLoadError);
