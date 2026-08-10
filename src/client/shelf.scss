@@ -1,5 +1,399 @@
-@use "tokens";
+@use "tokens" as *;
 
+// The shelf is a wide, scrolling grid rather than the single centered card the
+// home and auth screens use, so it opts out of the vertical centering.
 body {
-  padding: 2rem;
+  align-items: start;
+}
+
+.stage {
+  width: min(1100px, 100%);
+  animation: drop-in $drop-in both;
+}
+
+// player + actions strip above the grid
+.shelf-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.6rem;
+}
+
+.shelf-actions {
+  display: flex;
+  gap: 0.7rem;
+
+  .btn {
+    margin-top: 0;
+    padding: 0.7rem 1.2rem;
+    font-size: 0.9rem;
+  }
+}
+
+.shelf-message {
+  font-family: "Bungee", cursive;
+  font-size: 0.95rem;
+  text-align: center;
+  padding: 1.6rem 1rem;
+  background: var(--card);
+  border: 3px solid var(--ink);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+
+  &[hidden] {
+    display: none;
+  }
+}
+
+// add/edit form — a modal cartridge over a dimmed shelf
+.form-modal {
+  width: min(560px, calc(100vw - 2rem));
+  max-width: none;
+  max-height: calc(100vh - 3rem);
+  // The `*` reset in shared.scss zeroes the `margin: auto` the UA stylesheet
+  // uses to centre a modal dialog, so put it back.
+  margin: auto;
+  padding: 0;
+  color: var(--ink);
+  // `.card` clips its corners; the dialog scrolls instead when it runs tall.
+  overflow: auto;
+
+  &[open] {
+    animation: drop-in $drop-in both;
+  }
+
+  &::backdrop {
+    background: rgba(26, 21, 18, 0.55);
+  }
+
+  form {
+    // No bottom padding: the sticky action row below carries it instead.
+    padding: 1.5rem 1.5rem 0;
+    display: grid;
+    gap: 0.95rem;
+  }
+
+  h2 {
+    font-family: "Bungee", cursive;
+    font-size: 1.1rem;
+  }
+
+  // Keep Save reachable when a tall form scrolls inside the dialog.
+  .form-actions {
+    position: sticky;
+    bottom: 0;
+    background: var(--card);
+    padding: 0.6rem 0 1.5rem;
+  }
+}
+
+.form-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.close-modal {
+  font-family: "Bungee", cursive;
+  font-size: 1.1rem;
+  line-height: 1;
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  color: var(--ink);
+  background: var(--card);
+  border: 2.5px solid var(--ink);
+  border-radius: 8px;
+  box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
+  @include pressable;
+}
+
+.field {
+  display: grid;
+  gap: 0.35rem;
+
+  // `.choice` opts out: radio/checkbox rows keep sentence case and native controls.
+  label:not(.choice),
+  legend {
+    font-weight: 800;
+    font-size: 0.78rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  input:not([type="radio"]):not([type="checkbox"]),
+  select,
+  textarea {
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 0.7rem 0.85rem;
+    border: 2.5px solid var(--ink);
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: var(--shadow-sm);
+    transition: translate 0.12s, box-shadow 0.12s;
+    outline: none;
+
+    &:focus {
+      translate: -2px -2px;
+      box-shadow: 5px 5px 0 var(--teal);
+    }
+  }
+
+  textarea {
+    resize: vertical;
+  }
+}
+
+.priority-field {
+  border: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.9rem;
+
+  legend {
+    float: left;
+    width: 100%;
+    margin-bottom: 0.35rem;
+  }
+}
+
+.choice {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+
+  input {
+    accent-color: var(--tomato);
+    width: 1.05rem;
+    height: 1.05rem;
+  }
+}
+
+.form-actions {
+  display: flex;
+  gap: 0.7rem;
+
+  .btn {
+    flex: 1;
+    margin-top: 0;
+  }
+}
+
+// the shelf itself
+.game-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1.4rem;
+}
+
+.game-card {
+  background: var(--card);
+  border: 3px solid var(--ink);
+  border-radius: 18px;
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  transition: translate $press, box-shadow $press;
+
+  &:hover {
+    translate: -3px -3px;
+    box-shadow: var(--shadow);
+  }
+}
+
+.game-cover {
+  aspect-ratio: 16 / 9;
+  border-bottom: 3px solid var(--ink);
+  overflow: hidden;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  // no art yet — a striped cartridge label with the title's initial
+  &.empty {
+    display: grid;
+    place-items: center;
+    background: repeating-linear-gradient(
+      135deg,
+      var(--paper),
+      var(--paper) 10px,
+      var(--card) 10px,
+      var(--card) 20px
+    );
+  }
+
+  .initial {
+    font-family: "Bungee", cursive;
+    font-size: 2.4rem;
+    color: var(--tomato);
+    text-shadow: 3px 3px 0 var(--ink);
+  }
+}
+
+// A column so `.game-foot` can pin to the bottom of the tallest card in a row.
+.game-card-body {
+  padding: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.game-title {
+  font-family: "Bungee", cursive;
+  font-size: 0.9rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.game-platform {
+  font-weight: 600;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.game-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.game-rating {
+  font-weight: 800;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.status-pill {
+  font-family: "Bungee", cursive;
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.35rem 0.55rem;
+  color: var(--ink);
+  border: 2px solid var(--ink);
+  border-radius: 4px;
+  box-shadow: 2px 2px 0 var(--ink);
+  background: var(--teal);
+
+  &[data-status="WISHLIST"] {
+    background: var(--tomato);
+    color: var(--card);
+  }
+  &[data-status="BACKLOG"] {
+    background: var(--teal);
+  }
+  &[data-status="PLAYING"] {
+    background: var(--gold);
+  }
+  &[data-status="COMPLETED"] {
+    background: #4caf6d;
+  }
+  &[data-status="DROPPED"] {
+    background: #9a8f86;
+  }
+}
+
+.game-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.priority-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-weight: 700;
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+
+  .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid var(--ink);
+    background: var(--teal);
+  }
+
+  &[data-priority="HIGH"] .dot {
+    background: var(--tomato);
+  }
+  &[data-priority="MEDIUM"] .dot {
+    background: var(--gold);
+  }
+  &[data-priority="LOW"] .dot {
+    background: var(--teal);
+  }
+}
+
+.archived-tag {
+  font-weight: 800;
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.45rem;
+  border: 2px solid var(--ink);
+  border-radius: 4px;
+  background: var(--paper);
+}
+
+.game-notes {
+  font-size: 0.82rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.game-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding-top: 0.6rem;
+  border-top: 2.5px solid var(--ink);
+}
+
+.game-added {
+  font-weight: 600;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.65;
+}
+
+.edit-game-button {
+  font-family: "Bungee", cursive;
+  font-size: 0.65rem;
+  padding: 0.4rem 0.7rem;
+  color: var(--ink);
+  background: var(--card);
+  border: 2.5px solid var(--ink);
+  border-radius: 8px;
+  box-shadow: var(--shadow-sm);
+  @include pressable;
 }

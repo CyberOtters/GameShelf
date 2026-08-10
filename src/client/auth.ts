@@ -44,7 +44,7 @@ async function submit(
     }
     msg.textContent = okText;
     msg.classList.add("ok");
-    setTimeout(() => (location.href = "/"), 600);
+    setTimeout(() => (location.href = "/shelf"), 600);
   } catch (err) {
     msg.textContent = (err as Error).message;
     msg.classList.add("error");
