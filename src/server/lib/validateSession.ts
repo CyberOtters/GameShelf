@@ -1,100 +1,101 @@
 import { z } from "zod";
-import { badRequest, type FieldErrors } from "./errors.ts";
+import { badRequest, type FieldErrors, HttpError } from "./errors.ts";
 
+export const MAX_SESSION_HOURS = 999.9;
 export const MAX_SESSION_NOTES = 500;
 
-/** Turns a numeric string into a number so plain form posts work. */
-const numeric = (value: unknown) => {
-  if (typeof value !== "string") return value;
-  const trimmed = value.trim();
-  return trimmed === "" ? null : Number(trimmed);
-};
+const HOURS_ERROR = `must be a number from 0.1 to ${MAX_SESSION_HOURS} with at most one decimal place`;
 
-const GAME_ID_ERROR = "must be a valid game id";
+/** Prisma returns Decimal for hours; convert before arithmetic in JS. */
+export function decimalToNumber(value: { toNumber(): number } | null | undefined): number {
+  if (value == null) return 0;
+  return value.toNumber();
+}
 
-const gameId = z.preprocess(
-  numeric,
-  z.number({ error: GAME_ID_ERROR }).int(GAME_ID_ERROR).min(1, GAME_ID_ERROR),
-);
+/**
+ * Parses a YYYY-MM-DD string as a UTC calendar date so local timezone offset
+ * does not shift the stored DATE column.
+ */
+export function parseSessionDate(value: string): Date {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim());
+  if (!match) throw badRequest("Invalid session date", { sessionDate: "must be YYYY-MM-DD" });
 
-const HOURS_ERROR =
-  "must be a number from 0.1 to 999.9, in tenths of an hour";
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(Date.UTC(year, month - 1, day));
 
-/** Matches the Decimal(4,1) column: 0.1–999.9, at most one decimal place. */
-const hours = z.preprocess(
-  numeric,
-  z
-    .number({ error: HOURS_ERROR })
-    .min(0.1, HOURS_ERROR)
-    .max(999.9, HOURS_ERROR)
-    .refine(
-      (value) => Math.abs(value * 10 - Math.round(value * 10)) < 1e-9,
-      HOURS_ERROR,
-    ),
-);
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day
+  ) {
+    throw badRequest("Invalid session date", { sessionDate: "must be a valid calendar date" });
+  }
 
-const DATE_ERROR = "must be a date in YYYY-MM-DD format";
+  return date;
+}
 
-/** A calendar date like 2026-08-10, stored in the DATE column. */
-const sessionDate = z
-  .string({ error: DATE_ERROR })
-  .trim()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, DATE_ERROR)
-  .transform((value, ctx) => {
-    const date = new Date(`${value}T00:00:00.000Z`);
-    if (Number.isNaN(date.getTime())) {
-      ctx.addIssue({ code: "custom", message: DATE_ERROR });
-      return z.NEVER;
+function formatSessionDate(date: Date): string {
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(date.getUTCDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function parseHours(value: unknown): number {
+  let hours: number;
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!/^\d+(\.\d)?$/.test(trimmed)) {
+      throw badRequest("Some fields need fixing", { hours: HOURS_ERROR });
     }
-    return date;
-  });
+    hours = Number(trimmed);
+  } else if (typeof value === "number") {
+    hours = value;
+  } else {
+    throw badRequest("Some fields need fixing", { hours: HOURS_ERROR });
+  }
 
-/** Notes may be null; blank comes back as null. Mirrors validateGame's nullableText. */
-const notes = z
+  if (!Number.isFinite(hours) || hours < 0.1 || hours > MAX_SESSION_HOURS) {
+    throw badRequest("Some fields need fixing", { hours: HOURS_ERROR });
+  }
+
+  if (Math.round(hours * 10) !== hours * 10) {
+    throw badRequest("Some fields need fixing", { hours: HOURS_ERROR });
+  }
+
+  return hours;
+}
+
+const nullableNotes = z
   .string({ error: "must be text or null" })
   .trim()
   .nullable()
   .transform((value) => value || null)
-  .pipe(
-    z
-      .string()
-      .max(MAX_SESSION_NOTES, `must be ${MAX_SESSION_NOTES} characters or fewer`)
-      .nullable(),
-  );
+  .pipe(z.string().max(MAX_SESSION_NOTES, `must be ${MAX_SESSION_NOTES} characters or fewer`).nullable());
 
 const OBJECT_ERROR = { error: "Expected a JSON object" };
 
-/** The columns a client is allowed to set on a PlaySession. */
-export const createSessionSchema = z.object(
+const createSessionSchema = z.object(
   {
-    gameId,
-    hours,
-    sessionDate,
-    notes: notes.default(null),
+    hours: z.unknown(),
+    sessionDate: z.string({ error: "is required" }),
+    notes: nullableNotes.default(null),
   },
   OBJECT_ERROR,
 );
 
-// `gameId` is deliberately not editable — a session belongs to its game.
-export const updateSessionSchema = z.object(
+const updateSessionSchema = z.object(
   {
-    hours: hours.optional(),
-    sessionDate: sessionDate.optional(),
-    notes: notes.optional(),
+    hours: z.unknown().optional(),
+    sessionDate: z.string().optional(),
+    notes: nullableNotes.optional(),
   },
   OBJECT_ERROR,
 );
 
-export const sessionFiltersSchema = z.object({
-  gameId: gameId.optional(),
-});
-
-export type SessionInput = z.infer<typeof createSessionSchema>;
-
-/**
- * Runs a schema and turns any failure into a 400 the client can render:
- * `{ error, fields: { hours: "...", ... } }`, one message per field.
- */
 function parseWith<T>(schema: z.ZodType<T>, data: unknown, message: string): T {
   const result = schema.safeParse(data);
   if (result.success) return result.data;
@@ -102,7 +103,6 @@ function parseWith<T>(schema: z.ZodType<T>, data: unknown, message: string): T {
   const fields: FieldErrors = {};
   for (const issue of result.error.issues) {
     const field = issue.path.join(".");
-    // A problem with the payload itself (not a field) is the whole story.
     if (!field) throw badRequest(issue.message);
     fields[field] ??= issue.message;
   }
@@ -110,25 +110,71 @@ function parseWith<T>(schema: z.ZodType<T>, data: unknown, message: string): T {
   throw badRequest(message, fields);
 }
 
-/** POST /api/sessions — `gameId`, `hours`, and `sessionDate` are required. */
+export type SessionInput = {
+  hours: number;
+  sessionDate: Date;
+  notes: string | null;
+};
+
 export function parseCreateSession(body: unknown): SessionInput {
-  return parseWith(createSessionSchema, body, "Some fields need fixing");
+  const parsed = parseWith(createSessionSchema, body, "Some fields need fixing");
+
+  const fields: FieldErrors = {};
+  let hours: number | undefined;
+  let sessionDate: Date | undefined;
+
+  try {
+    hours = parseHours(parsed.hours);
+  } catch (error) {
+    if (error instanceof HttpError && error.fields) {
+      Object.assign(fields, error.fields);
+    }
+  }
+
+  try {
+    sessionDate = parseSessionDate(parsed.sessionDate);
+  } catch (error) {
+    if (error instanceof HttpError && error.fields) {
+      Object.assign(fields, error.fields);
+    }
+  }
+
+  if (Object.keys(fields).length > 0) {
+    throw badRequest("Some fields need fixing", fields);
+  }
+
+  return {
+    hours: hours!,
+    sessionDate: sessionDate!,
+    notes: parsed.notes,
+  };
 }
 
-/** PATCH /api/sessions/:id — every field is optional, but at least one must be present. */
-export function parseUpdateSession(body: unknown) {
+export function parseUpdateSession(body: unknown): Partial<SessionInput> {
   const parsed = parseWith(updateSessionSchema, body, "Some fields need fixing");
 
-  const patch = Object.fromEntries(
-    Object.entries(parsed).filter(([, value]) => value !== undefined),
-  ) as Partial<z.infer<typeof updateSessionSchema>>;
+  const patch: Partial<SessionInput> = {};
+  if (parsed.hours !== undefined) patch.hours = parseHours(parsed.hours);
+  if (parsed.sessionDate !== undefined) patch.sessionDate = parseSessionDate(parsed.sessionDate);
+  if (parsed.notes !== undefined) patch.notes = parsed.notes;
 
   if (Object.keys(patch).length === 0) throw badRequest("No fields to update");
 
   return patch;
 }
 
-/** GET /api/sessions — `?gameId=42`. */
-export function parseSessionFilters(query: unknown) {
-  return parseWith(sessionFiltersSchema, query, "Invalid filters");
+export function serializePlaySession<T extends { hours: { toNumber(): number }; sessionDate: Date }>(
+  session: T,
+) {
+  return {
+    ...session,
+    hours: decimalToNumber(session.hours),
+    sessionDate: formatSessionDate(session.sessionDate),
+  };
+}
+
+export function sumSessionHours(
+  sessions: Array<{ hours: { toNumber(): number } }>,
+): number {
+  return sessions.reduce((total, session) => total + decimalToNumber(session.hours), 0);
 }

@@ -16,6 +16,20 @@ type Game = {
   notes: string | null;
 };
 
+type PlaySession = {
+  id: number;
+  gameId: number;
+  userId: string;
+  hours: number;
+  sessionDate: string;
+  notes: string | null;
+};
+
+type SessionSummary = {
+  totalHours: number;
+  sessions: PlaySession[];
+};
+
 const STATUS_LABELS: Record<GameStatus, string> = {
   WISHLIST: "Wishlist",
   BACKLOG: "Backlog",
@@ -55,8 +69,29 @@ const closeGameFormButton =
 const gameFormTitle = getRequiredElement<HTMLElement>("#game-form-title");
 const saveGameButton = getRequiredElement<HTMLButtonElement>("#save-game-button");
 
+const sessionFormDialog =
+  getRequiredElement<HTMLDialogElement>("#session-form-dialog");
+const sessionForm = getRequiredElement<HTMLFormElement>("#session-form");
+const sessionFormTitle = getRequiredElement<HTMLElement>("#session-form-title");
+const sessionGameLabel = getRequiredElement<HTMLElement>("#session-game-label");
+const cancelSessionFormButton =
+  getRequiredElement<HTMLButtonElement>("#cancel-session-form");
+const closeSessionFormButton =
+  getRequiredElement<HTMLButtonElement>("#close-session-form");
+const saveSessionButton =
+  getRequiredElement<HTMLButtonElement>("#save-session-button");
+const sessionHoursField = getRequiredElement<HTMLInputElement>("#session-hours");
+const sessionDateField = getRequiredElement<HTMLInputElement>("#session-date");
+const sessionNotesField = getRequiredElement<HTMLTextAreaElement>("#session-notes");
+
 /** The game being edited, or null when the form is adding a new one. */
 let editingGameId: number | null = null;
+
+/** The game a session is being logged against. */
+let loggingSessionGame: Game | null = null;
+
+/** Cached session totals keyed by game id. */
+const sessionSummaries = new Map<number, SessionSummary>();
 
 function field<T extends Element>(name: string): T {
   return getRequiredElement<T>(`#game-form [name="${name}"]`);
@@ -113,6 +148,58 @@ function closeGameForm(): void {
   gameFormDialog.close();
 }
 
+function todayDateInputValue(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function openSessionForm(game: Game): void {
+  loggingSessionGame = game;
+  sessionForm.reset();
+  sessionFormTitle.textContent = "Log Session";
+  sessionGameLabel.textContent = game.title;
+  sessionDateField.value = todayDateInputValue();
+  saveSessionButton.textContent = "Log Session";
+  sessionFormDialog.showModal();
+}
+
+function closeSessionForm(): void {
+  sessionFormDialog.close();
+}
+
+function formatHours(totalHours: number): string {
+  if (totalHours === 0) return "0 hrs";
+  const formatted = Number.isInteger(totalHours) ? String(totalHours) : totalHours.toFixed(1);
+  return `${formatted} hr${totalHours === 1 ? "" : "s"}`;
+}
+
+async function loadSessionSummary(gameId: number): Promise<SessionSummary> {
+  const response = await fetch(`/api/games/${gameId}/sessions`);
+  if (!response.ok) {
+    throw new Error(`Failed to load sessions for game ${gameId}: ${response.status}`);
+  }
+  return response.json();
+}
+
+async function loadAllSessionSummaries(games: Game[]): Promise<void> {
+  sessionSummaries.clear();
+  const results = await Promise.allSettled(
+    games.map(async (game) => ({
+      gameId: game.id,
+      summary: await loadSessionSummary(game.id),
+    })),
+  );
+
+  for (const result of results) {
+    if (result.status === "fulfilled") {
+      sessionSummaries.set(result.value.gameId, result.value.summary);
+    }
+  }
+}
+
 // Load games from /api/games. `archived=all` because the shelf shows the whole
 // collection — the endpoint hides archived rows otherwise, which would make a
 // game vanish the moment it was archived from the edit form.
@@ -123,6 +210,7 @@ async function loadGames(): Promise<void> {
     throw new Error(`Failed to load games: ${response.status}`);
   }
   const games: Game[] = await response.json();
+  await loadAllSessionSummaries(games);
   renderGames(games);
 }
 
@@ -200,11 +288,29 @@ function createGameCard(game: Game): HTMLElement {
 
   const meta = element("div", "game-meta");
   meta.append(createStatusPill(game.status));
+  const summary = sessionSummaries.get(game.id);
+  const totalHours = summary?.totalHours ?? 0;
+
+  const hoursLink = document.createElement("a");
+  hoursLink.className = "game-hours";
+  hoursLink.href = `/shelf/games/${game.id}/log`;
+  hoursLink.textContent = formatHours(totalHours);
+  hoursLink.setAttribute("aria-label", `View play log for ${game.title}`);
+
+  meta.append(hoursLink);
   if (game.rating !== null) {
     meta.append(element("span", "game-rating", `★ ${game.rating}`));
   }
 
   body.append(title, platform, meta);
+
+  if (summary && summary.sessions.length > 0) {
+    const recent = summary.sessions[0];
+    const recentLine = recent.notes
+      ? `Last played ${recent.sessionDate}: ${recent.notes}`
+      : `Last played ${recent.sessionDate}`;
+    body.append(element("p", "game-recent-session", recentLine));
+  }
 
   if (game.priority || game.archived) {
     const tags = element("div", "game-tags");
@@ -224,6 +330,25 @@ function createGameCard(game: Game): HTMLElement {
   editButton.setAttribute("aria-label", `Edit ${game.title}`);
   editButton.addEventListener("click", () => openEditGameForm(game));
 
+  const logSessionButton = document.createElement("button");
+  logSessionButton.type = "button";
+  logSessionButton.className = "log-session-button";
+  logSessionButton.textContent = "Log Session";
+  logSessionButton.setAttribute("aria-label", `Log a session for ${game.title}`);
+  logSessionButton.addEventListener("click", () => openSessionForm(game));
+
+  const deleteButton = document.createElement("button");
+  deleteButton.type = "button";
+  deleteButton.className = "delete-game-button";
+  deleteButton.textContent = "Delete";
+  deleteButton.setAttribute("aria-label", `Delete ${game.title}`);
+  deleteButton.addEventListener("click", () => {
+    void deleteGame(game).catch(handleActionError);
+  });
+
+  const actions = element("div", "game-card-actions");
+  actions.append(logSessionButton, editButton, deleteButton);
+
   const foot = element("div", "game-foot");
   foot.append(
     element(
@@ -231,7 +356,7 @@ function createGameCard(game: Game): HTMLElement {
       "game-added",
       `Added ${new Date(game.addedAt).toLocaleDateString()}`,
     ),
-    editButton,
+    actions,
   );
   body.append(foot);
 
@@ -283,10 +408,79 @@ async function handleGameSubmit(event: SubmitEvent): Promise<void> {
   await loadGames();
 }
 
-function handleLoadError(error: unknown): void {
+async function deleteGame(game: Game): Promise<void> {
+  const confirmed = confirm(
+    `Delete "${game.title}"? Its play sessions will be removed too.`,
+  );
+  if (!confirmed) return;
+
+  const response = await fetch(`/api/games/${game.id}`, { method: "DELETE" });
+
+  if (!response.ok) {
+    throw new Error(`Failed to delete game: ${response.status}`);
+  }
+
+  if (editingGameId === game.id) closeGameForm();
+  await loadGames();
+}
+
+async function handleSessionSubmit(event: SubmitEvent): Promise<void> {
+  event.preventDefault();
+  if (!loggingSessionGame) return;
+
+  const formData = new FormData(sessionForm);
+  const notesValue = formData.get("notes");
+
+  const sessionInput = {
+    hours: Number(formData.get("hours")),
+    sessionDate: String(formData.get("sessionDate")),
+    notes: notesValue ? String(notesValue) : null,
+  };
+
+  const response = await fetch(`/api/games/${loggingSessionGame.id}/sessions`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(sessionInput),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to log session: ${response.status}`);
+  }
+
+  closeSessionForm();
+  await loadGames();
+}
+
+function handleActionError(error: unknown): void {
   console.error(error);
-  shelfMessage.textContent = "Could not load your games.";
+
+  if (error instanceof Error && error.message.includes("401")) {
+    shelfMessage.textContent =
+      "Your session expired. Sign in again from the home page.";
+  } else if (error instanceof Error && error.message.includes("500")) {
+    shelfMessage.textContent =
+      "The database connection dropped. Restart npm run dev, then refresh.";
+  } else if (error instanceof Error && error.message.includes("delete")) {
+    shelfMessage.textContent = "Could not delete that game.";
+  } else {
+    shelfMessage.textContent = "Something went wrong. Try again.";
+  }
+
   shelfMessage.hidden = false;
+}
+
+function handleLoadError(error: unknown): void {
+  handleActionError(error);
+  if (
+    error instanceof Error &&
+    !error.message.includes("401") &&
+    !error.message.includes("500") &&
+    !error.message.includes("delete")
+  ) {
+    shelfMessage.textContent = "Could not load your games.";
+  }
 }
 
 async function handleSignOut(): Promise<void> {
@@ -298,6 +492,9 @@ addGameButton.addEventListener("click", openGameForm);
 cancelGameFormButton.addEventListener("click", closeGameForm);
 closeGameFormButton.addEventListener("click", closeGameForm);
 gameForm.addEventListener("submit", handleGameSubmit);
+cancelSessionFormButton.addEventListener("click", closeSessionForm);
+closeSessionFormButton.addEventListener("click", closeSessionForm);
+sessionForm.addEventListener("submit", handleSessionSubmit);
 signOutButton.addEventListener("click", handleSignOut);
 
 // A click landing on the dialog itself, rather than the form filling it, is a
@@ -312,4 +509,15 @@ gameFormDialog.addEventListener("close", () => {
   editingGameId = null;
 });
 
+sessionFormDialog.addEventListener("click", (event) => {
+  if (event.target === sessionFormDialog) closeSessionForm();
+});
+
+sessionFormDialog.addEventListener("close", () => {
+  sessionForm.reset();
+  loggingSessionGame = null;
+});
+
 loadGames().catch(handleLoadError);
+
+export {};
