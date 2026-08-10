@@ -15,12 +15,14 @@ Implemented today:
 - Build pipeline for server, client JS, and SCSS assets
 - Prisma Compute deployment configuration
 
+- Play session CRUD scoped to the signed-in user (`/api/sessions`)
+- IGDB game search endpoint (`/api/igdb/search`), server-side via the
+  Twitch-authenticated helper in `src/server/lib/igdb.ts`
+
 Still in progress:
 
-- Play session CRUD
-- Any UI beyond the home player card and the login/register forms
-- External API integration (IGDB)
-- Test coverage beyond the `/api/games` route tests
+- Any UI beyond the home player card, the login/register forms, and the shelf
+- Wishlist and session-logging UI workflows
 
 ## Tech Stack
 
@@ -164,8 +166,25 @@ Open http://localhost:3000.
   `?archived=true|false|all` (archived rows are hidden by default)
 - `POST /api/games`: create a game — `userId` always comes from the session
 - `PATCH /api/games/:id`: update `title`, `platform`, `status`, `priority`,
-  `rating`, `notes`, or `archived`
+  `rating`, `coverUrl`, `notes`, or `archived`
 - `DELETE /api/games/:id`: delete a game and, by cascade, its play sessions
+
+The `/api/sessions` routes follow the same rules (session required, ownership
+scoped, foreign rows 404):
+
+- `GET /api/sessions`: the user's play sessions, newest session date first,
+  each with its game's `title`/`platform`; filterable with `?gameId=42`
+- `POST /api/sessions`: log a session (`gameId`, `hours`, `sessionDate`,
+  optional `notes`) — the game must belong to the signed-in user
+- `PATCH /api/sessions/:id`: update `hours`, `sessionDate`, or `notes`
+  (`gameId` is not editable)
+- `DELETE /api/sessions/:id`: delete a session (the game stays)
+
+External game metadata (requires `TWITCH_CLIENT_ID`/`TWITCH_CLIENT_SECRET`):
+
+- `GET /api/igdb/search?q=hades`: signed-in-only IGDB lookup returning
+  `{ igdbId, title, coverUrl, releaseYear, platforms, genres, rating }` per
+  match — `coverUrl` is ready to save straight onto a game
 
 ## Database Models (Current)
 

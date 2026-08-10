@@ -324,6 +324,41 @@ describe("POST /api/games", () => {
     );
   });
 
+  it("stores an https cover URL and clears it with null", async () => {
+    const coverUrl = "https://images.igdb.com/igdb/image/upload/t_cover_big/co1rgi.jpg";
+
+    const created = await api("/api/games", {
+      method: "POST",
+      cookie: alice.cookie,
+      body: { title: "Hades", platform: "PC", coverUrl },
+    });
+    expect(created.status).toBe(201);
+    expect(created.body.coverUrl).toBe(coverUrl);
+
+    const cleared = await api(`/api/games/${created.body.id}`, {
+      method: "PATCH",
+      cookie: alice.cookie,
+      body: { coverUrl: null },
+    });
+    expect(cleared.status).toBe(200);
+    expect(cleared.body.coverUrl).toBeNull();
+  });
+
+  it.each([
+    "http://images.igdb.com/cover.jpg",
+    "javascript:alert(1)",
+    `https://example.com/${"x".repeat(256)}`,
+  ])("rejects cover URL %s", async (coverUrl) => {
+    const res = await api("/api/games", {
+      method: "POST",
+      cookie: alice.cookie,
+      body: { title: "Hades", platform: "PC", coverUrl },
+    });
+
+    expect(res.status).toBe(400);
+    expect(res.body.fields.coverUrl).toBeDefined();
+  });
+
   it("rejects a body that is not an object", async () => {
     const res = await api("/api/games", {
       method: "POST",

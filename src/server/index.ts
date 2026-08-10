@@ -9,6 +9,8 @@ import { gamesRouter } from "./routes/games.ts";
 import { requireAuth } from "./lib/requireAuth.ts";
 import { redirectToShelfIfSignedIn } from "./lib/pageAuth.ts";
 import { shelfRouter } from "./routes/shelf.ts";
+import { sessionsRouter } from "./routes/sessions.ts";
+import { igdbRouter } from "./routes/igdb.ts";
 
 const app = express();
 const port = process.env.PORT ?? 3000;
@@ -65,6 +67,10 @@ app.get("/api/me", requireAuth, async (req, res) => {
 app.use("/shelf", shelfRouter);
 
 app.use("/api/games", gamesRouter);
+
+app.use("/api/sessions", sessionsRouter);
+
+app.use("/api/igdb", igdbRouter);
 
 app.use(errorHandler);
 

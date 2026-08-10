@@ -5,6 +5,7 @@ import { badRequest, type FieldErrors } from "./errors.ts";
 export const MAX_TITLE = 100;
 export const MAX_PLATFORM = 30;
 export const MAX_NOTES = 500;
+export const MAX_COVER_URL = 255;
 
 const oneOf = (values: readonly string[]) =>
   `must be one of: ${values.join(", ")}`;
@@ -57,6 +58,14 @@ const priority = z.preprocess(
 
 const archived = z.boolean({ error: "must be true or false" });
 
+// Rendered straight into an <img src>, so only https URLs are allowed in.
+const coverUrl = nullableText(MAX_COVER_URL).pipe(
+  z
+    .string()
+    .startsWith("https://", "must be an https:// URL")
+    .nullable(),
+);
+
 const OBJECT_ERROR = { error: "Expected a JSON object" };
 
 /** The columns a client is allowed to set on a Game. */
@@ -67,6 +76,7 @@ export const createGameSchema = z.object(
     status: status.default(GameStatus.BACKLOG),
     priority: priority.default(null),
     rating: rating.default(null),
+    coverUrl: coverUrl.default(null),
     notes: nullableText(MAX_NOTES).default(null),
     archived: archived.default(false),
   },
@@ -80,6 +90,7 @@ export const updateGameSchema = z.object(
     status: status.optional(),
     priority: priority.optional(),
     rating: rating.optional(),
+    coverUrl: coverUrl.optional(),
     notes: nullableText(MAX_NOTES).optional(),
     archived: archived.optional(),
   },
