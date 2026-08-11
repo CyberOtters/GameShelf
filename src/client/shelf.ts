@@ -30,6 +30,16 @@ type SessionSummary = {
   sessions: PlaySession[];
 };
 
+type GameSearchResult = {
+  igdbId: number;
+  title: string;
+  coverUrl: string | null;
+  releaseYear: number | null;
+  platforms: string[];
+  genres: string[];
+  rating: number | null;
+};
+
 const STATUS_LABELS: Record<GameStatus, string> = {
   WISHLIST: "Wishlist",
   BACKLOG: "Backlog",
@@ -103,10 +113,172 @@ const statusField = field<HTMLSelectElement>("status");
 const ratingField = field<HTMLInputElement>("rating");
 const archivedField = field<HTMLInputElement>("archived");
 const notesField = field<HTMLTextAreaElement>("notes");
+const coverUrlField = field<HTMLInputElement>("coverUrl");
+const searchStatus = getRequiredElement<HTMLElement>("#game-search-status");
+const searchResults = getRequiredElement<HTMLElement>("#game-search-results");
+const coverPreview = getRequiredElement<HTMLElement>("#cover-preview");
+const coverPreviewImage = getRequiredElement<HTMLImageElement>(
+  "#cover-preview-image",
+);
+const clearCoverButton = getRequiredElement<HTMLButtonElement>("#clear-cover");
+
+const SEARCH_DEBOUNCE_MS = 300;
+const MIN_SEARCH_LENGTH = 2;
+
+/** Maps IGDB platform names onto the shelf dropdown values when possible. */
+const PLATFORM_ALIASES: { match: RegExp; value: string }[] = [
+  { match: /nintendo switch/i, value: "Nintendo Switch" },
+  { match: /playstation\s*5|ps5/i, value: "PS5" },
+  { match: /xbox/i, value: "Xbox" },
+  { match: /\bpc\b|windows|steam/i, value: "PC" },
+];
+
+let searchTimer: ReturnType<typeof setTimeout> | null = null;
+let searchRequestId = 0;
+
+function clearSearchUi(): void {
+  searchRequestId += 1;
+  if (searchTimer !== null) {
+    clearTimeout(searchTimer);
+    searchTimer = null;
+  }
+  searchResults.replaceChildren();
+  searchResults.hidden = true;
+  searchStatus.hidden = true;
+  searchStatus.textContent = "";
+}
+
+function setCoverUrl(url: string | null): void {
+  coverUrlField.value = url ?? "";
+  if (url) {
+    coverPreviewImage.src = url;
+    coverPreview.hidden = false;
+  } else {
+    coverPreviewImage.removeAttribute("src");
+    coverPreview.hidden = true;
+  }
+}
+
+function pickPlatform(platforms: string[]): void {
+  for (const alias of PLATFORM_ALIASES) {
+    if (platforms.some((name) => alias.match.test(name))) {
+      selectValue(platformField, alias.value);
+      return;
+    }
+  }
+  if (platforms[0]) selectValue(platformField, platforms[0].slice(0, 30));
+}
+
+function applySearchResult(result: GameSearchResult): void {
+  titleField.value = result.title;
+  setCoverUrl(result.coverUrl);
+  pickPlatform(result.platforms);
+  if (result.rating !== null && !ratingField.value) {
+    ratingField.value = String(Math.min(10, Math.max(1, Math.round(result.rating))));
+  }
+  clearSearchUi();
+  titleField.focus();
+}
+
+function renderSearchResults(results: GameSearchResult[]): void {
+  searchResults.replaceChildren();
+
+  if (results.length === 0) {
+    searchStatus.textContent = "No IGDB matches — you can still save this title.";
+    searchStatus.hidden = false;
+    searchResults.hidden = true;
+    return;
+  }
+
+  searchStatus.hidden = true;
+
+  for (const result of results) {
+    const item = document.createElement("li");
+    item.className = "game-search-result";
+    item.setAttribute("role", "option");
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "game-search-result-button";
+
+    if (result.coverUrl) {
+      const thumb = document.createElement("img");
+      thumb.src = result.coverUrl;
+      thumb.alt = "";
+      thumb.loading = "lazy";
+      thumb.className = "game-search-thumb";
+      button.append(thumb);
+    } else {
+      button.append(element("span", "game-search-thumb empty"));
+    }
+
+    const meta = element("span", "game-search-meta");
+    meta.append(element("span", "game-search-title", result.title));
+
+    const details = [
+      result.releaseYear ? String(result.releaseYear) : null,
+      result.platforms.slice(0, 2).join(", ") || null,
+    ]
+      .filter(Boolean)
+      .join(" · ");
+    if (details) meta.append(element("span", "game-search-details", details));
+
+    button.append(meta);
+    button.addEventListener("click", () => applySearchResult(result));
+    item.append(button);
+    searchResults.append(item);
+  }
+
+  searchResults.hidden = false;
+}
+
+async function searchIgdb(query: string): Promise<void> {
+  const requestId = ++searchRequestId;
+  searchStatus.textContent = "Searching IGDB…";
+  searchStatus.hidden = false;
+  searchResults.hidden = true;
+
+  try {
+    const response = await fetch(
+      `/api/igdb/search?q=${encodeURIComponent(query)}`,
+    );
+    if (!response.ok) {
+      throw new Error(`IGDB search failed: ${response.status}`);
+    }
+    const results: GameSearchResult[] = await response.json();
+    if (requestId !== searchRequestId) return;
+    renderSearchResults(results);
+  } catch (error) {
+    if (requestId !== searchRequestId) return;
+    console.error(error);
+    searchResults.replaceChildren();
+    searchResults.hidden = true;
+    searchStatus.textContent =
+      "Game search is unavailable — you can still enter a title manually.";
+    searchStatus.hidden = false;
+  }
+}
+
+function scheduleIgdbSearch(): void {
+  if (searchTimer !== null) clearTimeout(searchTimer);
+
+  const query = titleField.value.trim();
+  if (query.length < MIN_SEARCH_LENGTH) {
+    clearSearchUi();
+    return;
+  }
+
+  searchTimer = setTimeout(() => {
+    searchTimer = null;
+    void searchIgdb(query);
+  }, SEARCH_DEBOUNCE_MS);
+}
 
 function openGameForm(): void {
   editingGameId = null;
   gameForm.reset();
+  clearSearchUi();
+  setCoverUrl(null);
   gameFormTitle.textContent = "Add Game";
   saveGameButton.textContent = "Save Game";
   gameFormDialog.showModal();
@@ -115,6 +287,7 @@ function openGameForm(): void {
 function openEditGameForm(game: Game): void {
   editingGameId = game.id;
   gameForm.reset();
+  clearSearchUi();
   gameFormTitle.textContent = "Edit Game";
   saveGameButton.textContent = "Save Changes";
 
@@ -124,6 +297,7 @@ function openEditGameForm(game: Game): void {
   ratingField.value = game.rating === null ? "" : String(game.rating);
   archivedField.checked = game.archived;
   notesField.value = game.notes ?? "";
+  setCoverUrl(game.coverUrl);
 
   for (const radio of gameForm.querySelectorAll<HTMLInputElement>(
     'input[name="priority"]',
@@ -145,6 +319,7 @@ function selectValue(select: HTMLSelectElement, value: string): void {
 }
 
 function closeGameForm(): void {
+  clearSearchUi();
   gameFormDialog.close();
 }
 
@@ -375,6 +550,8 @@ async function handleGameSubmit(event: SubmitEvent): Promise<void> {
   const priorityValue = formData.get("priority");
   const notesValue = formData.get("notes");
 
+  const coverUrlValue = formData.get("coverUrl");
+
   const gameInput = {
     title: String(formData.get("title")),
     platform: String(formData.get("platform")),
@@ -382,6 +559,7 @@ async function handleGameSubmit(event: SubmitEvent): Promise<void> {
     priority: priorityValue ? String(priorityValue) : null,
     archived: formData.get("archived") === "on",
     rating: ratingValue ? Number(ratingValue) : null,
+    coverUrl: coverUrlValue ? String(coverUrlValue) : null,
     notes: notesValue ? String(notesValue) : null,
   };
 
@@ -491,6 +669,8 @@ async function handleSignOut(): Promise<void> {
 addGameButton.addEventListener("click", openGameForm);
 cancelGameFormButton.addEventListener("click", closeGameForm);
 closeGameFormButton.addEventListener("click", closeGameForm);
+clearCoverButton.addEventListener("click", () => setCoverUrl(null));
+titleField.addEventListener("input", scheduleIgdbSearch);
 gameForm.addEventListener("submit", handleGameSubmit);
 cancelSessionFormButton.addEventListener("click", closeSessionForm);
 closeSessionFormButton.addEventListener("click", closeSessionForm);
@@ -505,6 +685,8 @@ gameFormDialog.addEventListener("click", (event) => {
 
 // Covers Escape too, which closes the dialog without going through our buttons.
 gameFormDialog.addEventListener("close", () => {
+  clearSearchUi();
+  setCoverUrl(null);
   gameForm.reset();
   editingGameId = null;
 });

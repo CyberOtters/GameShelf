@@ -30,9 +30,21 @@
       <button type="button" class="close-modal" id="close-game-form" aria-label="Close">×</button>
     </div>
 
-    <div class="field">
+    <div class="field game-search-field">
       <label for="game-title">Title</label>
-      <input id="game-title" type="text" name="title" required maxlength="100" autofocus placeholder="Super Mario Bros. 3">
+      <input id="game-title" type="text" name="title" required maxlength="100" autofocus placeholder="Search IGDB or type a title" autocomplete="off">
+      <p id="game-search-status" class="game-search-status" hidden></p>
+      <ul id="game-search-results" class="game-search-results" hidden role="listbox" aria-label="IGDB search results"></ul>
+    </div>
+
+    <input type="hidden" name="coverUrl" id="game-cover-url" value="">
+
+    <div class="cover-preview" id="cover-preview" hidden>
+      <img id="cover-preview-image" alt="" width="72" height="96">
+      <div class="cover-preview-copy">
+        <span class="cover-preview-label">Cover from IGDB</span>
+        <button type="button" class="cover-preview-clear" id="clear-cover">Remove cover</button>
+      </div>
     </div>
 
     <div class="field">
