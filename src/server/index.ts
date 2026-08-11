@@ -6,14 +6,12 @@ import { fromNodeHeaders, toNodeHandler } from "better-auth/node";
 import { auth } from "./lib/auth.ts";
 import { errorHandler } from "./lib/errors.ts";
 import { gamesRouter } from "./routes/games.ts";
+import { igdbRouter } from "./routes/igdb.ts";
 import { sessionsRouter } from "./routes/sessions.ts";
 import { requireAuth } from "./lib/requireAuth.ts";
 import { redirectToShelfIfSignedIn } from "./lib/pageAuth.ts";
 import { DEMO_ACCOUNT } from "./lib/demoAccount.ts";
-import { connectDatabase } from "./lib/prisma.ts";
 import { shelfRouter } from "./routes/shelf.ts";
-import { sessionsRouter } from "./routes/sessions.ts";
-import { igdbRouter } from "./routes/igdb.ts";
 
 const app = express();
 const port = process.env.PORT ?? 3000;
@@ -72,14 +70,13 @@ app.use("/shelf", shelfRouter);
 
 app.use("/api/games", gamesRouter);
 app.use("/api/games/:gameId/sessions", sessionsRouter);
+app.use("/api/igdb", igdbRouter);
 
 app.use("/api/sessions", sessionsRouter);
 
 app.use("/api/igdb", igdbRouter);
 
 app.use(errorHandler);
-
-await connectDatabase();
 
 app.listen(port, () => {
   console.log(`GameShelf listening on http://localhost:${port}`);

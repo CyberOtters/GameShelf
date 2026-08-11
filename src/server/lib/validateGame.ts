@@ -60,10 +60,7 @@ const archived = z.boolean({ error: "must be true or false" });
 
 // Rendered straight into an <img src>, so only https URLs are allowed in.
 const coverUrl = nullableText(MAX_COVER_URL).pipe(
-  z
-    .string()
-    .startsWith("https://", "must be an https:// URL")
-    .nullable(),
+  z.string().startsWith("https://", "must be an https:// URL").nullable(),
 );
 
 const OBJECT_ERROR = { error: "Expected a JSON object" };

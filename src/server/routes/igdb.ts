@@ -1,17 +1,23 @@
 import { Router } from "express";
-import { badRequest, HttpError } from "../lib/errors.ts";
+import { HttpError, badRequest } from "../lib/errors.ts";
 import { requireAuth } from "../lib/requireAuth.ts";
-import { searchIgdbGames, type IgdbSearchGame } from "../lib/igdb.ts";
+import {
+  igdbCoverUrl,
+  searchIgdbGames,
+  type IgdbSearchGame,
+} from "../lib/igdb.ts";
 
 export const igdbRouter = Router();
 
-// Auth-gated so the endpoint isn't an open proxy for the team's Twitch key.
+// Search is only offered from the add/edit form, which is behind a login, and
+// every call spends part of our IGDB rate limit — so require a session.
 igdbRouter.use(requireAuth);
 
-const MAX_QUERY = 100;
+const MAX_LIMIT = 25;
+const DEFAULT_LIMIT = 8;
 
-/** What the client needs to fill the Add Game form from a search result. */
-export type GameSearchResult = {
+/** The shape the add-game form renders; see `GameSearchResult` in shelf.ts. */
+type GameSearchResult = {
   igdbId: number;
   title: string;
   coverUrl: string | null;
@@ -21,47 +27,45 @@ export type GameSearchResult = {
   rating: number | null;
 };
 
-/**
- * IGDB covers arrive as `//images.igdb.com/...t_thumb/xyz.jpg`. Swap in the
- * shelf-card size and a real scheme so the URL can go straight into
- * `Game.coverUrl`.
- */
-function coverUrl(game: IgdbSearchGame): string | null {
-  const url = game.cover?.url;
-  if (!url) return null;
-
-  const sized = url.replace("/t_thumb/", "/t_cover_big/");
-  return sized.startsWith("//") ? `https:${sized}` : sized;
+function releaseYear(timestamp?: number | null): number | null {
+  if (!timestamp) return null;
+  return new Date(timestamp * 1000).getUTCFullYear();
 }
 
 function toSearchResult(game: IgdbSearchGame): GameSearchResult {
   return {
     igdbId: game.id,
     title: game.name,
-    coverUrl: coverUrl(game),
-    releaseYear: game.first_release_date
-      ? new Date(game.first_release_date * 1000).getUTCFullYear()
-      : null,
+    coverUrl: igdbCoverUrl(game.cover),
+    releaseYear: releaseYear(game.first_release_date),
     platforms: game.platforms?.map((platform) => platform.name) ?? [],
     genres: game.genres?.map((genre) => genre.name) ?? [],
-    rating: game.rating == null ? null : Math.round(game.rating) / 10,
+    rating: typeof game.rating === "number" ? game.rating / 10 : null,
   };
 }
 
-// GET /search?q=hades — server-side lookup the Add Game form searches against.
+function searchLimit(raw: unknown): number {
+  if (raw === undefined) return DEFAULT_LIMIT;
+  const limit = Number(raw);
+  if (!Number.isInteger(limit) || limit < 1 || limit > MAX_LIMIT) {
+    throw badRequest(`limit must be a whole number from 1 to ${MAX_LIMIT}`);
+  }
+  return limit;
+}
+
+// GET /api/igdb/search?q=zelda — type-ahead for the add-game form.
 igdbRouter.get("/search", async (req, res) => {
   const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
-  if (!q) throw badRequest("Missing search text");
-  if (q.length > MAX_QUERY) {
-    throw badRequest(`Search text must be ${MAX_QUERY} characters or fewer`);
-  }
+  if (!q) throw badRequest("q is required");
 
   let games: IgdbSearchGame[];
   try {
-    games = await searchIgdbGames(q);
-  } catch (cause) {
-    console.error("IGDB search failed", cause);
-    throw new HttpError(502, "Game search is unavailable right now");
+    games = await searchIgdbGames(q, searchLimit(req.query.limit));
+  } catch (error) {
+    // IGDB being down or misconfigured isn't the client's fault, and the form
+    // treats a failure as "search unavailable" and lets the user type a title.
+    console.error("IGDB search failed:", error);
+    throw new HttpError(503, "Game search is unavailable right now");
   }
 
   res.json(games.map(toSearchResult));

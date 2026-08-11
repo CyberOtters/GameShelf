@@ -98,6 +98,9 @@ Notes:
 - `DATABASE_URL` is required by Prisma and the PG adapter. `schema.prisma` has no
   inline `datasource.url`; Prisma reads the variable through `prisma.config.ts`,
   and `src/server/lib/prisma.ts` passes it to the `pg` pool.
+- With `npx prisma dev`, copy the `DATABASE_URL` it prints into `.env`. The local
+  port can change between runs (for example `51214` vs `51218`), so update `.env`
+  whenever Prisma Dev shows a different URL, then restart `npm run dev`.
 - `BETTER_AUTH_URL` should be your public app URL in production.
 - `TWITCH_CLIENT_ID` and `TWITCH_CLIENT_SECRET` are required for IGDB API calls.
 - `STAGE=development` tells the server to load static assets from the local development layout.
@@ -113,31 +116,52 @@ For deploys, this project also uses `deploy.env` with `dotenvx`.
 npm install
 ```
 
-2. Generate the Prisma client (`generated/prisma` is not checked in):
+2. Create a `.env` file from the template and fill in Twitch / Better Auth values:
+
+```bash
+cp .env.example .env
+```
+
+On Windows PowerShell: `Copy-Item .env.example .env`
+
+3. Generate the Prisma client (`generated/prisma` is not checked in):
 
 ```bash
 npx prisma generate
 ```
 
-3. Apply migrations:
+4. Start the local Prisma Postgres database (leave this terminal running):
+
+```bash
+npx prisma dev
+```
+
+Copy the printed `DATABASE_URL` into `.env`. Do not hardcode a port from docs or
+another machine — use the URL Prisma Dev prints for this run.
+
+5. In a second terminal, apply migrations:
 
 ```bash
 npx prisma migrate deploy
 ```
 
-4. Start local development:
-
-```bash
-npm run dev
-```
-
-5. Optional: load demo data for local development or SQL export:
+6. Optional: load demo data for local development or SQL export:
 
 ```bash
 npm run db:seed
 ```
 
+7. Start the app (keep `npx prisma dev` running in the other terminal):
+
+```bash
+npm run dev
+```
+
 Open http://localhost:3000.
+
+If login or queries fail with a connection error after restarting Prisma Dev,
+compare `.env`’s `DATABASE_URL` to the URL in the Prisma Dev terminal and update
+the port if it changed.
 
 ## Demo Account
 
