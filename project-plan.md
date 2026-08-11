@@ -49,6 +49,22 @@ GameShelf is currently a **full-stack TypeScript app** using **Express + EJS + P
     `DELETE /:id`; another user's row reads as 404, never 403
   - zod request schemas (`src/server/lib/validateGame.ts`) and a centralized
     JSON error handler (`src/server/lib/errors.ts`)
+- `coverUrl` is writable through the game routes (https-only, ≤255 chars), so
+  IGDB search results can be saved with their cover art
+- Auth-gated `PlaySession` CRUD, scoped to the signed-in user
+  (`src/server/routes/sessions.ts`, schemas in
+  `src/server/lib/validateSession.ts`):
+  - `GET /api/sessions` with a `gameId` filter, newest session date first,
+    each row carrying its game's `title`/`platform`
+  - `POST /api/sessions` — the target game must belong to the session user
+    (a foreign game 404s), `userId` always comes from the session
+  - `PATCH /api/sessions/:id` updates `hours`/`sessionDate`/`notes`
+    (`gameId` is not editable); `DELETE /api/sessions/:id`
+- IGDB search endpoint `GET /api/igdb/search?q=` (`src/server/routes/igdb.ts`)
+  on top of the `src/server/lib/igdb.ts` helper — auth-gated so it is not an
+  open proxy for the Twitch credentials, returns
+  `{ igdbId, title, coverUrl, releaseYear, platforms, genres, rating }` with
+  `coverUrl` sized (`t_cover_big`) and https-prefixed to fit `Game.coverUrl`
 - Build/deploy pipeline:
   - esbuild server/client bundling
   - Prisma generate on build
@@ -56,18 +72,16 @@ GameShelf is currently a **full-stack TypeScript app** using **Express + EJS + P
 
 ### What is not implemented yet
 
-- Play session CRUD routes
 - Wishlist workflows on top of `GameStatus.WISHLIST` / `priority`
-- Auth-gated data ownership for `PlaySession` — `Game` routes are scoped to the
-  session, play sessions have no routes yet
-- Any UI beyond the home player card and the login/register forms
+- UI for play-session logging and IGDB search — the API routes exist, the
+  shelf interface does not call them yet
 - Archive UI — `Game.archived` is readable and writable through the game routes,
   but nothing in the interface uses it yet
-- IGDB API integration
 - localStorage personalization
-- Business rules beyond field validation (game writes are validated with zod;
-  wishlist-specific rules are not written yet)
-- Tests for anything beyond the `/api/games` routes (no client or auth tests)
+- Business rules beyond field validation (game and session writes are validated
+  with zod; wishlist-specific rules are not written yet)
+- Tests beyond the `/api/games`, `/api/sessions`, and `/api/igdb` routes (no
+  client or auth tests; the IGDB tests cover auth/validation, not the live call)
 
 ## 3. Tech Stack (current)
 
@@ -206,8 +220,13 @@ Unique index: (`identifier`, `value`)
 | GET    | `/api/me`          | Implemented | returns current session/user JSON (or null)                                             |
 | GET    | `/api/games`       | Implemented | signed-in user's games; `?status=` and `?archived=true\|false\|all` filters             |
 | POST   | `/api/games`       | Implemented | creates a game owned by the session user (body `userId` ignored)                        |
-| PATCH  | `/api/games/:id`   | Implemented | updates title/platform/status/priority/rating/notes/archived; 404 on another user's row |
+| PATCH  | `/api/games/:id`   | Implemented | updates title/platform/status/priority/rating/coverUrl/notes/archived; 404 on another user's row |
 | DELETE | `/api/games/:id`   | Implemented | deletes an owned game (cascades its play sessions); 404 otherwise                       |
+| GET    | `/api/sessions`    | Implemented | signed-in user's play sessions with game title/platform; `?gameId=` filter              |
+| POST   | `/api/sessions`    | Implemented | logs a session against an owned game (foreign game 404s; body `userId` ignored)         |
+| PATCH  | `/api/sessions/:id`| Implemented | updates hours/sessionDate/notes; 404 on another user's row                              |
+| DELETE | `/api/sessions/:id`| Implemented | deletes an owned session (game stays); 404 otherwise                                    |
+| GET    | `/api/igdb/search` | Implemented | auth-gated IGDB title search (`?q=`); needs `TWITCH_CLIENT_ID`/`TWITCH_CLIENT_SECRET`   |
 
 ## 6. Execution Commands (current)
 
@@ -227,13 +246,13 @@ Unique index: (`identifier`, `value`)
 
 ## 7. Next Milestones
 
-1. Add full CRUD routes for `Game` (backlog + wishlist, via `status`) and `PlaySession`
-2. Add authenticated ownership flow so every game/session query is scoped to
-   `session.user.id`, starting with `GET /api/games`
-3. Add validation and centralized error handling for all write operations
+1. ~~Add full CRUD routes for `Game` (backlog + wishlist, via `status`) and `PlaySession`~~ done
+2. ~~Add authenticated ownership flow so every game/session query is scoped to
+   `session.user.id`~~ done for games and play sessions
+3. ~~Add validation and centralized error handling for all write operations~~ done
 4. Build authenticated UI workflows for managing backlog, sessions, and wishlist data
-5. Integrate IGDB API
-6. Add tests plus seed/sample data workflow
+5. ~~Integrate IGDB API~~ done (`GET /api/igdb/search`); wire the Add Game form to it
+6. Add seed/sample data workflow (route tests exist for games, sessions, and IGDB)
 
 ## 8. Open Gaps Against the Rubric
 
@@ -244,8 +263,8 @@ Tracked here so the final report is not the first place these surface:
   platform, priority, and `archived` are all natural fits).
 - **Edit existing records with pre-filled data, 3+ fields** — `PATCH /api/games/:id`
   exists; the edit UI does not.
-- **Two web APIs** — only local endpoints (`/api/me`, `/api/games`) exist today;
-  IGDB is still unstarted.
+- **Two web APIs** — satisfied: local endpoints (`/api/me`, `/api/games`,
+  `/api/sessions`) plus the external IGDB API through `/api/igdb/search`.
 - **Database records export** — submission requires a SQL export of real data;
   there is no seed or sample data yet.
 - **Sessions/Web storage** — satisfied by Better Auth sessions.
