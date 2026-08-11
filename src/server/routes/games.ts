@@ -7,6 +7,10 @@ import {
   parseGameFilters,
   parseUpdateGame,
 } from "../lib/validateGame.ts";
+import {
+  serializePlaySession,
+  sumSessionHours,
+} from "../lib/validateSession.ts";
 
 export const gamesRouter = Router();
 
@@ -31,9 +35,22 @@ gamesRouter.get("/", async (req, res) => {
       ...(archived === undefined ? {} : { archived }),
     },
     orderBy: [{ addedAt: "desc" }, { id: "desc" }],
+    include: {
+      // Newest first, matching GET /games/:gameId/sessions — the shelf card
+      // reads sessions[0] as the most recent play.
+      sessions: { orderBy: [{ sessionDate: "desc" }, { id: "desc" }] },
+    },
   });
 
-  res.json(games);
+  // hours is a Decimal and sessionDate a DATE; serialize them the same way the
+  // sessions endpoint does so the client sees numbers and YYYY-MM-DD strings.
+  res.json(
+    games.map((game) => ({
+      ...game,
+      sessions: game.sessions.map(serializePlaySession),
+      totalHours: sumSessionHours(game.sessions),
+    })),
+  );
 });
 
 gamesRouter.post("/", async (req, res) => {

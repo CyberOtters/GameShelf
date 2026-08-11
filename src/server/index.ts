@@ -10,7 +10,6 @@ import { sessionsRouter } from "./routes/sessions.ts";
 import { requireAuth } from "./lib/requireAuth.ts";
 import { redirectToShelfIfSignedIn } from "./lib/pageAuth.ts";
 import { DEMO_ACCOUNT } from "./lib/demoAccount.ts";
-import { connectDatabase } from "./lib/prisma.ts";
 import { shelfRouter } from "./routes/shelf.ts";
 
 const app = express();
@@ -72,8 +71,6 @@ app.use("/api/games", gamesRouter);
 app.use("/api/games/:gameId/sessions", sessionsRouter);
 
 app.use(errorHandler);
-
-await connectDatabase();
 
 app.listen(port, () => {
   console.log(`GameShelf listening on http://localhost:${port}`);
