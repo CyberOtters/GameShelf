@@ -14,6 +14,9 @@ type Game = {
   coverUrl: string | null;
   addedAt: string;
   notes: string | null;
+  // GET /api/games embeds the play log, newest session first.
+  sessions: PlaySession[];
+  totalHours: number;
 };
 
 type PlaySession = {
@@ -23,11 +26,6 @@ type PlaySession = {
   hours: number;
   sessionDate: string;
   notes: string | null;
-};
-
-type SessionSummary = {
-  totalHours: number;
-  sessions: PlaySession[];
 };
 
 type GameSearchResult = {
@@ -77,31 +75,35 @@ const cancelGameFormButton =
 const closeGameFormButton =
   getRequiredElement<HTMLButtonElement>("#close-game-form");
 const gameFormTitle = getRequiredElement<HTMLElement>("#game-form-title");
-const saveGameButton = getRequiredElement<HTMLButtonElement>("#save-game-button");
+const saveGameButton =
+  getRequiredElement<HTMLButtonElement>("#save-game-button");
 
-const sessionFormDialog =
-  getRequiredElement<HTMLDialogElement>("#session-form-dialog");
+const sessionFormDialog = getRequiredElement<HTMLDialogElement>(
+  "#session-form-dialog",
+);
 const sessionForm = getRequiredElement<HTMLFormElement>("#session-form");
 const sessionFormTitle = getRequiredElement<HTMLElement>("#session-form-title");
 const sessionGameLabel = getRequiredElement<HTMLElement>("#session-game-label");
-const cancelSessionFormButton =
-  getRequiredElement<HTMLButtonElement>("#cancel-session-form");
-const closeSessionFormButton =
-  getRequiredElement<HTMLButtonElement>("#close-session-form");
-const saveSessionButton =
-  getRequiredElement<HTMLButtonElement>("#save-session-button");
-const sessionHoursField = getRequiredElement<HTMLInputElement>("#session-hours");
+const cancelSessionFormButton = getRequiredElement<HTMLButtonElement>(
+  "#cancel-session-form",
+);
+const closeSessionFormButton = getRequiredElement<HTMLButtonElement>(
+  "#close-session-form",
+);
+const saveSessionButton = getRequiredElement<HTMLButtonElement>(
+  "#save-session-button",
+);
+const sessionHoursField =
+  getRequiredElement<HTMLInputElement>("#session-hours");
 const sessionDateField = getRequiredElement<HTMLInputElement>("#session-date");
-const sessionNotesField = getRequiredElement<HTMLTextAreaElement>("#session-notes");
+const sessionNotesField =
+  getRequiredElement<HTMLTextAreaElement>("#session-notes");
 
 /** The game being edited, or null when the form is adding a new one. */
 let editingGameId: number | null = null;
 
 /** The game a session is being logged against. */
 let loggingSessionGame: Game | null = null;
-
-/** Cached session totals keyed by game id. */
-const sessionSummaries = new Map<number, SessionSummary>();
 
 function field<T extends Element>(name: string): T {
   return getRequiredElement<T>(`#game-form [name="${name}"]`);
@@ -174,7 +176,9 @@ function applySearchResult(result: GameSearchResult): void {
   setCoverUrl(result.coverUrl);
   pickPlatform(result.platforms);
   if (result.rating !== null && !ratingField.value) {
-    ratingField.value = String(Math.min(10, Math.max(1, Math.round(result.rating))));
+    ratingField.value = String(
+      Math.min(10, Math.max(1, Math.round(result.rating))),
+    );
   }
   clearSearchUi();
   titleField.focus();
@@ -184,7 +188,8 @@ function renderSearchResults(results: GameSearchResult[]): void {
   searchResults.replaceChildren();
 
   if (results.length === 0) {
-    searchStatus.textContent = "No IGDB matches — you can still save this title.";
+    searchStatus.textContent =
+      "No IGDB matches — you can still save this title.";
     searchStatus.hidden = false;
     searchResults.hidden = true;
     return;
@@ -347,32 +352,10 @@ function closeSessionForm(): void {
 
 function formatHours(totalHours: number): string {
   if (totalHours === 0) return "0 hrs";
-  const formatted = Number.isInteger(totalHours) ? String(totalHours) : totalHours.toFixed(1);
+  const formatted = Number.isInteger(totalHours)
+    ? String(totalHours)
+    : totalHours.toFixed(1);
   return `${formatted} hr${totalHours === 1 ? "" : "s"}`;
-}
-
-async function loadSessionSummary(gameId: number): Promise<SessionSummary> {
-  const response = await fetch(`/api/games/${gameId}/sessions`);
-  if (!response.ok) {
-    throw new Error(`Failed to load sessions for game ${gameId}: ${response.status}`);
-  }
-  return response.json();
-}
-
-async function loadAllSessionSummaries(games: Game[]): Promise<void> {
-  sessionSummaries.clear();
-  const results = await Promise.allSettled(
-    games.map(async (game) => ({
-      gameId: game.id,
-      summary: await loadSessionSummary(game.id),
-    })),
-  );
-
-  for (const result of results) {
-    if (result.status === "fulfilled") {
-      sessionSummaries.set(result.value.gameId, result.value.summary);
-    }
-  }
 }
 
 // Load games from /api/games. `archived=all` because the shelf shows the whole
@@ -385,7 +368,6 @@ async function loadGames(): Promise<void> {
     throw new Error(`Failed to load games: ${response.status}`);
   }
   const games: Game[] = await response.json();
-  await loadAllSessionSummaries(games);
   renderGames(games);
 }
 
@@ -463,13 +445,10 @@ function createGameCard(game: Game): HTMLElement {
 
   const meta = element("div", "game-meta");
   meta.append(createStatusPill(game.status));
-  const summary = sessionSummaries.get(game.id);
-  const totalHours = summary?.totalHours ?? 0;
-
   const hoursLink = document.createElement("a");
   hoursLink.className = "game-hours";
   hoursLink.href = `/shelf/games/${game.id}/log`;
-  hoursLink.textContent = formatHours(totalHours);
+  hoursLink.textContent = formatHours(game.totalHours);
   hoursLink.setAttribute("aria-label", `View play log for ${game.title}`);
 
   meta.append(hoursLink);
@@ -479,8 +458,8 @@ function createGameCard(game: Game): HTMLElement {
 
   body.append(title, platform, meta);
 
-  if (summary && summary.sessions.length > 0) {
-    const recent = summary.sessions[0];
+  if (game.sessions.length > 0) {
+    const recent = game.sessions[0];
     const recentLine = recent.notes
       ? `Last played ${recent.sessionDate}: ${recent.notes}`
       : `Last played ${recent.sessionDate}`;
@@ -509,7 +488,10 @@ function createGameCard(game: Game): HTMLElement {
   logSessionButton.type = "button";
   logSessionButton.className = "log-session-button";
   logSessionButton.textContent = "Log Session";
-  logSessionButton.setAttribute("aria-label", `Log a session for ${game.title}`);
+  logSessionButton.setAttribute(
+    "aria-label",
+    `Log a session for ${game.title}`,
+  );
   logSessionButton.addEventListener("click", () => openSessionForm(game));
 
   const deleteButton = document.createElement("button");

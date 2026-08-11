@@ -5,6 +5,7 @@ import { badRequest, type FieldErrors } from "./errors.ts";
 export const MAX_TITLE = 100;
 export const MAX_PLATFORM = 30;
 export const MAX_NOTES = 500;
+export const MAX_COVER_URL = 255;
 
 const oneOf = (values: readonly string[]) =>
   `must be one of: ${values.join(", ")}`;
@@ -28,6 +29,16 @@ const nullableText = (max: number) =>
     .nullable()
     .transform((value) => value || null)
     .pipe(z.string().max(max, `must be ${max} characters or fewer`).nullable());
+
+/**
+ * Cover art comes back from the IGDB search as an absolute https URL and ends
+ * up in an `<img src>`, so refuse anything that isn't a plain http(s) link
+ * rather than storing it and rendering it later.
+ */
+const coverUrl = nullableText(MAX_COVER_URL).refine(
+  (value) => value === null || /^https?:\/\//i.test(value),
+  "must be an http(s) URL, or null",
+);
 
 const RATING_ERROR = "must be a whole number from 1 to 10, or null";
 
@@ -68,6 +79,7 @@ export const createGameSchema = z.object(
     priority: priority.default(null),
     rating: rating.default(null),
     notes: nullableText(MAX_NOTES).default(null),
+    coverUrl: coverUrl.default(null),
     archived: archived.default(false),
   },
   OBJECT_ERROR,
@@ -81,6 +93,7 @@ export const updateGameSchema = z.object(
     priority: priority.optional(),
     rating: rating.optional(),
     notes: nullableText(MAX_NOTES).optional(),
+    coverUrl: coverUrl.optional(),
     archived: archived.optional(),
   },
   OBJECT_ERROR,
