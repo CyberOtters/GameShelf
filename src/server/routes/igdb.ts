@@ -1,7 +1,11 @@
 import { Router } from "express";
 import { HttpError, badRequest } from "../lib/errors.ts";
 import { requireAuth } from "../lib/requireAuth.ts";
-import { searchIgdbGames, type IgdbSearchGame } from "../lib/igdb.ts";
+import {
+  igdbCoverUrl,
+  searchIgdbGames,
+  type IgdbSearchGame,
+} from "../lib/igdb.ts";
 
 export const igdbRouter = Router();
 
@@ -23,17 +27,6 @@ type GameSearchResult = {
   rating: number | null;
 };
 
-/**
- * IGDB hands back a protocol-relative thumbnail
- * (`//images.igdb.com/.../t_thumb/co1234.jpg`). Add the scheme and ask for the
- * larger rendition, since the shelf card shows it at full cover size.
- */
-function coverUrl(cover: IgdbSearchGame["cover"]): string | null {
-  if (!cover?.url) return null;
-  const absolute = cover.url.startsWith("//") ? `https:${cover.url}` : cover.url;
-  return absolute.replace("/t_thumb/", "/t_cover_big/");
-}
-
 function releaseYear(timestamp?: number | null): number | null {
   if (!timestamp) return null;
   return new Date(timestamp * 1000).getUTCFullYear();
@@ -43,7 +36,7 @@ function toSearchResult(game: IgdbSearchGame): GameSearchResult {
   return {
     igdbId: game.id,
     title: game.name,
-    coverUrl: coverUrl(game.cover),
+    coverUrl: igdbCoverUrl(game.cover),
     releaseYear: releaseYear(game.first_release_date),
     platforms: game.platforms?.map((platform) => platform.name) ?? [],
     genres: game.genres?.map((genre) => genre.name) ?? [],

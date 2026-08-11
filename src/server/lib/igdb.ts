@@ -13,6 +13,17 @@ export type IgdbSearchGame = {
 	rating?: number | null;
 };
 
+/**
+ * IGDB hands back a protocol-relative thumbnail
+ * (`//images.igdb.com/.../t_thumb/co1234.jpg`). Add the scheme and ask for the
+ * larger rendition, since the shelf card shows it at full cover size.
+ */
+export function igdbCoverUrl(cover: IgdbSearchGame["cover"]): string | null {
+	if (!cover?.url) return null;
+	const absolute = cover.url.startsWith("//") ? `https:${cover.url}` : cover.url;
+	return absolute.replace("/t_thumb/", "/t_cover_big/");
+}
+
 const IGDB_BASE_URL = "https://api.igdb.com/v4";
 const TWITCH_TOKEN_URL = "https://id.twitch.tv/oauth2/token";
 const TOKEN_BUFFER_MS = 60_000;
