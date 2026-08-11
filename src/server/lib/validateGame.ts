@@ -68,6 +68,14 @@ const priority = z.preprocess(
 
 const archived = z.boolean({ error: "must be true or false" });
 
+// Rendered straight into an <img src>, so only https URLs are allowed in.
+const coverUrl = nullableText(MAX_COVER_URL).pipe(
+  z
+    .string()
+    .startsWith("https://", "must be an https:// URL")
+    .nullable(),
+);
+
 const OBJECT_ERROR = { error: "Expected a JSON object" };
 
 /** The columns a client is allowed to set on a Game. */
@@ -78,6 +86,7 @@ export const createGameSchema = z.object(
     status: status.default(GameStatus.BACKLOG),
     priority: priority.default(null),
     rating: rating.default(null),
+    coverUrl: coverUrl.default(null),
     notes: nullableText(MAX_NOTES).default(null),
     coverUrl: coverUrl.default(null),
     archived: archived.default(false),
@@ -92,6 +101,7 @@ export const updateGameSchema = z.object(
     status: status.optional(),
     priority: priority.optional(),
     rating: rating.optional(),
+    coverUrl: coverUrl.optional(),
     notes: nullableText(MAX_NOTES).optional(),
     coverUrl: coverUrl.optional(),
     archived: archived.optional(),

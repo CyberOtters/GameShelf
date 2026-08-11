@@ -18,6 +18,10 @@ Implemented today:
 - Build pipeline for server, client JS, and SCSS assets
 - Prisma Compute deployment configuration
 
+- Play session CRUD scoped to the signed-in user (`/api/sessions`)
+- IGDB game search endpoint (`/api/igdb/search`), server-side via the
+  Twitch-authenticated helper in `src/server/lib/igdb.ts`
+
 Still in progress:
 
 - External API integration (IGDB)
@@ -209,7 +213,7 @@ Source of truth: `src/server/lib/demoAccount.ts`.
   `?archived=true|false|all` (archived rows are hidden by default)
 - `POST /api/games`: create a game — `userId` always comes from the session
 - `PATCH /api/games/:id`: update `title`, `platform`, `status`, `priority`,
-  `rating`, `notes`, or `archived`
+  `rating`, `coverUrl`, `notes`, or `archived`
 - `DELETE /api/games/:id`: delete a game and, by cascade, its play sessions
 
 All `/api/games/:gameId/sessions` routes require a session, verify the parent
