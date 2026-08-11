@@ -30,16 +30,6 @@ const nullableText = (max: number) =>
     .transform((value) => value || null)
     .pipe(z.string().max(max, `must be ${max} characters or fewer`).nullable());
 
-/**
- * Cover art comes back from the IGDB search as an absolute https URL and ends
- * up in an `<img src>`, so refuse anything that isn't a plain http(s) link
- * rather than storing it and rendering it later.
- */
-const coverUrl = nullableText(MAX_COVER_URL).refine(
-  (value) => value === null || /^https?:\/\//i.test(value),
-  "must be an http(s) URL, or null",
-);
-
 const RATING_ERROR = "must be a whole number from 1 to 10, or null";
 
 /** 1–10 or null. Numeric strings are accepted so plain form posts work. */
@@ -70,10 +60,7 @@ const archived = z.boolean({ error: "must be true or false" });
 
 // Rendered straight into an <img src>, so only https URLs are allowed in.
 const coverUrl = nullableText(MAX_COVER_URL).pipe(
-  z
-    .string()
-    .startsWith("https://", "must be an https:// URL")
-    .nullable(),
+  z.string().startsWith("https://", "must be an https:// URL").nullable(),
 );
 
 const OBJECT_ERROR = { error: "Expected a JSON object" };
@@ -88,7 +75,6 @@ export const createGameSchema = z.object(
     rating: rating.default(null),
     coverUrl: coverUrl.default(null),
     notes: nullableText(MAX_NOTES).default(null),
-    coverUrl: coverUrl.default(null),
     archived: archived.default(false),
   },
   OBJECT_ERROR,
@@ -103,7 +89,6 @@ export const updateGameSchema = z.object(
     rating: rating.optional(),
     coverUrl: coverUrl.optional(),
     notes: nullableText(MAX_NOTES).optional(),
-    coverUrl: coverUrl.optional(),
     archived: archived.optional(),
   },
   OBJECT_ERROR,
