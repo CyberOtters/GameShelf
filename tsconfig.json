@@ -12,6 +12,7 @@
     "noImplicitAny": false
   },
   "include": [
+    "scripts",
     "src/server",
     "prisma.config.ts",
     "vitest.config.ts",
