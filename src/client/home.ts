@@ -50,9 +50,9 @@ async function render() {
     body.append(badge, stat("Email", email), signOut);
   } else {
     title.textContent = "No Player Found";
-    const signIn = el("a", "btn", "Insert Coin");
+    const signIn = el("a", "btn", "Log In");
     signIn.href = "/login";
-    const register = el("a", "btn ghost", "New Game");
+    const register = el("a", "btn ghost", "Sign Up");
     register.href = "/register";
     body.append(signIn, register);
   }
