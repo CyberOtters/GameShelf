@@ -15,6 +15,9 @@ igdbRouter.use(requireAuth);
 
 const MAX_LIMIT = 25;
 const DEFAULT_LIMIT = 8;
+// Matches Game.title's column width. Anything longer is a runaway paste rather
+// than a real search, and rejecting it here keeps it off our IGDB rate limit.
+const MAX_QUERY_LENGTH = 100;
 
 /** The shape the add-game form renders; see `GameSearchResult` in shelf.ts. */
 type GameSearchResult = {
@@ -44,6 +47,17 @@ function toSearchResult(game: IgdbSearchGame): GameSearchResult {
   };
 }
 
+function searchText(raw: unknown): string {
+  const q = typeof raw === "string" ? raw.trim() : "";
+  if (!q) throw badRequest("Missing search text");
+  if (q.length > MAX_QUERY_LENGTH) {
+    throw badRequest(
+      `Search text must be ${MAX_QUERY_LENGTH} characters or fewer`,
+    );
+  }
+  return q;
+}
+
 function searchLimit(raw: unknown): number {
   if (raw === undefined) return DEFAULT_LIMIT;
   const limit = Number(raw);
@@ -55,8 +69,7 @@ function searchLimit(raw: unknown): number {
 
 // GET /api/igdb/search?q=zelda — type-ahead for the add-game form.
 igdbRouter.get("/search", async (req, res) => {
-  const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
-  if (!q) throw badRequest("q is required");
+  const q = searchText(req.query.q);
 
   let games: IgdbSearchGame[];
   try {
