@@ -51,7 +51,8 @@ app.get("/", redirectToShelfIfSignedIn, (_req, res) => {
 
 app.get(["/login", "/register"], redirectToShelfIfSignedIn, (_req, res) => {
   res.render("auth", {
-    demoAccount: isDev ? DEMO_ACCOUNT : null,
+    demoAccount: DEMO_ACCOUNT,
+    isDev: isDev,
     assets: {
       js: "/assets/auth.js",
       css: ["/assets/shared.css", "/assets/auth.css"],

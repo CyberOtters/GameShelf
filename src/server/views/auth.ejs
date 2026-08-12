@@ -1,55 +1,57 @@
 <%- include('partials/header', { title: 'GameShelf — Player Start', stageId: null, tagline: 'Press start to continue' }) %>
 
-    <section class="card">
-      <div class="ridges" aria-hidden="true">
-        <span></span><span></span><span></span><span></span>
-      </div>
+<section class="card">
+  <div class="ridges" aria-hidden="true">
+    <span></span><span></span><span></span><span></span>
+  </div>
 
-      <div class="tabs" role="tablist">
-        <button type="button" id="tab-login" class="active" aria-selected="true">Sign In</button>
-        <button type="button" id="tab-register" aria-selected="false">Sign Up</button>
-      </div>
+  <div class="tabs" role="tablist">
+    <button type="button" id="tab-login" class="active" aria-selected="true">Log In</button>
+    <button type="button" id="tab-register" aria-selected="false">Sign Up</button>
+  </div>
 
-      <form id="form-login">
-        <div class="msg" role="alert"></div>
-        <div class="field">
-          <label for="li-email">Email</label>
-          <input id="li-email" type="email" autocomplete="email" required placeholder="player1@example.com" />
-        </div>
-        <div class="field">
-          <label for="li-password">Password</label>
-          <input id="li-password" type="password" autocomplete="current-password" required placeholder="••••••••" />
-        </div>
-        <button class="submit" type="submit">Insert Coin</button>
-      </form>
+  <form id="form-login">
+    <div class="msg" role="alert"></div>
+    <div class="field">
+      <label for="li-email">Email</label>
+      <input id="li-email" type="email" autocomplete="email" required placeholder="player1@example.com" />
+    </div>
+    <div class="field">
+      <label for="li-password">Password</label>
+      <input id="li-password" type="password" autocomplete="current-password" required placeholder="••••••••" />
+    </div>
+    <button class="submit" type="submit">Log In</button>
+  </form>
 
-      <form id="form-register" hidden>
-        <div class="msg" role="alert"></div>
-        <div class="field">
-          <label for="re-name">Player Name</label>
-          <input id="re-name" type="text" autocomplete="name" required placeholder="Player One" />
-        </div>
-        <div class="field">
-          <label for="re-email">Email</label>
-          <input id="re-email" type="email" autocomplete="email" required placeholder="player1@example.com" />
-        </div>
-        <div class="field">
-          <label for="re-password">Password</label>
-          <input id="re-password" type="password" autocomplete="new-password" required minlength="8" placeholder="8+ characters" />
-        </div>
-        <button class="submit" type="submit">New Game</button>
-      </form>
-    </section>
+  <form id="form-register" hidden>
+    <div class="msg" role="alert"></div>
+    <div class="field">
+      <label for="re-name">Player Name</label>
+      <input id="re-name" type="text" autocomplete="name" required placeholder="Player One" />
+    </div>
+    <div class="field">
+      <label for="re-email">Email</label>
+      <input id="re-email" type="email" autocomplete="email" required placeholder="player1@example.com" />
+    </div>
+    <div class="field">
+      <label for="re-password">Password</label>
+      <input id="re-password" type="password" autocomplete="new-password" required minlength="8" placeholder="8+ characters" />
+    </div>
+    <button class="submit" type="submit">Sign Up</button>
+  </form>
+</section>
 
-    <% if (demoAccount) { %>
-    <aside class="demo-account" aria-label="Demo account for local development">
-      <p class="demo-account-label">Demo account</p>
-      <p><strong>Email:</strong> <%= demoAccount.email %></p>
-      <p><strong>Password:</strong> <%= demoAccount.password %></p>
-      <p class="demo-account-note">Run <code>npm run db:seed</code> first if sign-in fails.</p>
-    </aside>
-    <% } %>
+<% if (demoAccount) { %>
+<aside class="demo-account" aria-label="Demo account for local development">
+  <p class="demo-account-label">Demo account</p>
+  <p><strong>Email:</strong> <%= demoAccount.email %></p>
+  <p><strong>Password:</strong> <%= demoAccount.password %></p>
+  <% if (isDev) { %>
+  <p class="demo-account-note">Run <code>npm run db:seed</code> first if sign-in fails.</p>
+  <% } %>
+</aside>
+<% } %>
 
-    <p class="foot"><a href="/">← Back to the shelf</a></p>
+<p class="foot"><a href="/">← Back to the shelf</a></p>
 
 <%- include('partials/footer') %>
