@@ -656,3 +656,130 @@ describe("DELETE /api/games/:id", () => {
     expect(await prisma.playSession.count({ where: { gameId: game.id } })).toBe(0);
   });
 });
+
+describe("wishlist rules", () => {
+  it("allows creating a wishlist entry, rated or not", async () => {
+    const res = await api("/api/games", {
+      method: "POST",
+      cookie: alice.cookie,
+      body: {
+        title: "Metroid Prime 4",
+        platform: "Nintendo Switch",
+        status: "WISHLIST",
+        priority: "HIGH",
+        rating: 9,
+      },
+    });
+
+    expect(res.status).toBe(201);
+    expect(res.body.status).toBe("WISHLIST");
+    expect(res.body.rating).toBe(9);
+  });
+
+  it("allows rating a game that is on the wishlist", async () => {
+    const game = await seed(alice.id, { status: "WISHLIST" });
+
+    const res = await api(`/api/games/${game.id}`, {
+      method: "PATCH",
+      cookie: alice.cookie,
+      body: { rating: 8 },
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.body.rating).toBe(8);
+  });
+
+  it("allows wishlisting a game that keeps its rating", async () => {
+    const game = await seed(alice.id, { status: "COMPLETED", rating: 9 });
+
+    const res = await api(`/api/games/${game.id}`, {
+      method: "PATCH",
+      cookie: alice.cookie,
+      body: { status: "WISHLIST" },
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe("WISHLIST");
+    expect(res.body.rating).toBe(9);
+  });
+
+  it("rejects wishlisting a game with logged play sessions", async () => {
+    const game = await seed(alice.id, { status: "PLAYING" });
+    await prisma.playSession.create({
+      data: {
+        gameId: game.id,
+        userId: alice.id,
+        hours: 3,
+        sessionDate: new Date("2026-08-01"),
+      },
+    });
+
+    const res = await api(`/api/games/${game.id}`, {
+      method: "PATCH",
+      cookie: alice.cookie,
+      body: { status: "WISHLIST" },
+    });
+
+    expect(res.status).toBe(409);
+    expect(res.body.error).toMatch(/already has play time/i);
+  });
+
+  it("still 404s another user's game before any rule runs", async () => {
+    const game = await seed(bob.id, { status: "PLAYING" });
+    await prisma.playSession.create({
+      data: {
+        gameId: game.id,
+        userId: bob.id,
+        hours: 3,
+        sessionDate: new Date("2026-08-01"),
+      },
+    });
+
+    const res = await api(`/api/games/${game.id}`, {
+      method: "PATCH",
+      cookie: alice.cookie,
+      body: { status: "WISHLIST" },
+    });
+
+    expect(res.status).toBe(404);
+  });
+});
+
+describe("GET /api/games?sort=priority", () => {
+  it("ranks HIGH before MEDIUM before LOW, with unranked games last", async () => {
+    await seed(alice.id, { title: "Low", priority: "LOW" });
+    await seed(alice.id, { title: "Unranked" });
+    await seed(alice.id, { title: "High", priority: "HIGH" });
+    await seed(alice.id, { title: "Medium", priority: "MEDIUM" });
+
+    const res = await api("/api/games?archived=all&sort=priority", {
+      cookie: alice.cookie,
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.body.map((game: { title: string }) => game.title)).toEqual([
+      "High",
+      "Medium",
+      "Low",
+      "Unranked",
+    ]);
+  });
+
+  it("defaults to newest-added first", async () => {
+    await seed(alice.id, { title: "Older", priority: "LOW" });
+    await seed(alice.id, { title: "Newer", priority: "HIGH" });
+
+    const res = await api("/api/games?archived=all", { cookie: alice.cookie });
+
+    expect(res.body.map((game: { title: string }) => game.title)).toEqual([
+      "Newer",
+      "Older",
+    ]);
+  });
+
+  it("rejects an unknown sort", async () => {
+    const res = await api("/api/games?sort=sideways", { cookie: alice.cookie });
+
+    expect(res.status).toBe(400);
+  });
+});

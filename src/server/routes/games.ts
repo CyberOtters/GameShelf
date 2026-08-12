@@ -11,6 +11,7 @@ import {
   serializePlaySession,
   sumSessionHours,
 } from "../lib/validateSession.ts";
+import { assertUpdateAllowed } from "../lib/gameRules.ts";
 
 export const gamesRouter = Router();
 
@@ -22,11 +23,23 @@ function gameId(raw: string) {
   return id;
 }
 
-// GET /games?status=BACKLOG&archived=all — the shelf, backlog and wishlist
-// views all read from here; wishlist is just `status=WISHLIST`.
+// GET /games?status=BACKLOG&archived=all&sort=priority — the shelf, backlog and
+// wishlist views all read from here; wishlist is just `status=WISHLIST`.
 gamesRouter.get("/", async (req, res) => {
   const userId = sessionUserId(req);
-  const { status, archived } = parseGameFilters(req.query);
+  const { status, archived, sort } = parseGameFilters(req.query);
+
+  // Priority is declared HIGH, MEDIUM, LOW, and Postgres orders an enum by its
+  // declaration order — so ascending is most urgent first. Unranked games have
+  // a null priority and belong at the end rather than the top.
+  const orderBy =
+    sort === "priority"
+      ? ([
+          { priority: { sort: "asc", nulls: "last" } },
+          { addedAt: "desc" },
+          { id: "desc" },
+        ] as const)
+      : ([{ addedAt: "desc" }, { id: "desc" }] as const);
 
   const games = await prisma.game.findMany({
     where: {
@@ -34,7 +47,7 @@ gamesRouter.get("/", async (req, res) => {
       ...(status ? { status } : {}),
       ...(archived === undefined ? {} : { archived }),
     },
-    orderBy: [{ addedAt: "desc" }, { id: "desc" }],
+    orderBy: [...orderBy],
     include: {
       // Newest first, matching GET /games/:gameId/sessions — the shelf card
       // reads sessions[0] as the most recent play.
@@ -69,14 +82,21 @@ gamesRouter.patch("/:id", async (req, res) => {
   const patch = parseUpdateGame(req.body);
 
   // Matching on userId as well as id means another user's row simply isn't
-  // found, rather than reporting that it exists but is forbidden.
-  const { count } = await prisma.game.updateMany({
+  // found, rather than reporting that it exists but is forbidden. The rules
+  // need the stored row too, since a patch is only legal in combination with
+  // the state it lands on.
+  const existing = await prisma.game.findFirst({
     where: { id, userId },
-    data: patch,
+    select: {
+      status: true,
+      _count: { select: { sessions: true } },
+    },
   });
-  if (count === 0) throw notFound("Game not found");
+  if (!existing) throw notFound("Game not found");
 
-  const game = await prisma.game.findUnique({ where: { id } });
+  assertUpdateAllowed(existing, patch, existing._count.sessions);
+
+  const game = await prisma.game.update({ where: { id }, data: patch });
   res.json(game);
 });
 

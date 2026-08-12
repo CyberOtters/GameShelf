@@ -386,3 +386,43 @@ describe("DELETE /api/games/:gameId/sessions/:sessionId", () => {
     expect(await prisma.playSession.findUnique({ where: { id: session.id } })).not.toBeNull();
   });
 });
+
+describe("wishlist rule", () => {
+  it("409s when logging play time against a wishlisted game", async () => {
+    const game = await seedGame(alice.id, { status: "WISHLIST" });
+
+    const res = await api(`/api/games/${game.id}/sessions`, {
+      method: "POST",
+      cookie: alice.cookie,
+      body: { hours: 2, sessionDate: "2026-08-01" },
+    });
+
+    expect(res.status).toBe(409);
+    expect(res.body.error).toMatch(/wishlisted game/i);
+    expect(await prisma.playSession.count({ where: { gameId: game.id } })).toBe(0);
+  });
+
+  it("allows logging once the game moves off the wishlist", async () => {
+    const game = await seedGame(alice.id, { status: "BACKLOG" });
+
+    const res = await api(`/api/games/${game.id}/sessions`, {
+      method: "POST",
+      cookie: alice.cookie,
+      body: { hours: 2, sessionDate: "2026-08-01" },
+    });
+
+    expect(res.status).toBe(201);
+  });
+
+  it("404s another user's wishlisted game rather than leaking the rule", async () => {
+    const game = await seedGame(bob.id, { status: "WISHLIST" });
+
+    const res = await api(`/api/games/${game.id}/sessions`, {
+      method: "POST",
+      cookie: alice.cookie,
+      body: { hours: 2, sessionDate: "2026-08-01" },
+    });
+
+    expect(res.status).toBe(404);
+  });
+});

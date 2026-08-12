@@ -119,6 +119,30 @@ body {
   gap: 0.45rem;
 }
 
+.session-entry-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-top: 0.15rem;
+
+  button {
+    font-family: "Bungee", cursive;
+    font-size: 0.62rem;
+    padding: 0.4rem 0.7rem;
+    border: 2.5px solid var(--ink);
+    border-radius: 9px;
+    background: var(--card);
+    box-shadow: 3px 3px 0 var(--ink);
+    color: var(--ink);
+    @include pressable;
+  }
+}
+
+.session-delete-button {
+  background: var(--tomato);
+  color: #fff;
+}
+
 .session-entry-head {
   display: flex;
   align-items: center;
