@@ -103,7 +103,7 @@ GameShelf is currently a **full-stack TypeScript app** using **Express + EJS + P
     Log Session button for those cards, and the play log hides it too)
   - violations answer `409` with a message written for the user, which the
     client shows verbatim
-  - rating is deliberately *not* restricted: a wishlisted game may carry a
+  - rating is deliberately _not_ restricted: a wishlisted game may carry a
     score, so you can rank something you have played on someone else's console
     or are re-buying
 - Seed and export workflow: `npm run db:seed` creates the demo user, 6 games,
@@ -118,15 +118,15 @@ GameShelf is currently a **full-stack TypeScript app** using **Express + EJS + P
 
 119 tests across 7 files (`npm test`; the route tests need a running database).
 
-| File | Covers |
-| ---- | ------ |
-| `src/server/routes/games.test.ts` | `/api/games` CRUD, ownership scoping, filters, priority sort, wishlist rules |
-| `src/server/routes/sessions.test.ts` | nested session CRUD, ownership, the wishlist write guard |
-| `src/server/routes/igdb.test.ts` | IGDB route auth and query validation (not the live call) |
-| `src/server/lib/gameRules.test.ts` | every business rule and the patch-merge logic, as pure units |
-| `src/server/lib/pageAuth.test.ts` | `requirePageAuth`, `redirectToShelfIfSignedIn`, `requireAuth` against real sessions |
+| File                                  | Covers                                                                                  |
+| ------------------------------------- | --------------------------------------------------------------------------------------- |
+| `src/server/routes/games.test.ts`     | `/api/games` CRUD, ownership scoping, filters, priority sort, wishlist rules            |
+| `src/server/routes/sessions.test.ts`  | nested session CRUD, ownership, the wishlist write guard                                |
+| `src/server/routes/igdb.test.ts`      | IGDB route auth and query validation (not the live call)                                |
+| `src/server/lib/gameRules.test.ts`    | every business rule and the patch-merge logic, as pure units                            |
+| `src/server/lib/pageAuth.test.ts`     | `requirePageAuth`, `redirectToShelfIfSignedIn`, `requireAuth` against real sessions     |
 | `src/client/lib/shelfFilters.test.ts` | filter normalization, query building, the localStorage round-trip and its failure modes |
-| `src/client/lib/format.test.ts` | hour and date formatting, including the local-vs-UTC date boundary |
+| `src/client/lib/format.test.ts`       | hour and date formatting, including the local-vs-UTC date boundary                      |
 
 ### What is not implemented yet
 
@@ -269,27 +269,27 @@ Unique index: (`identifier`, `value`)
 
 ## 5. Current Routes
 
-| Method | Path               | Status      | Behavior                                                                                |
-| ------ | ------------------ | ----------- | --------------------------------------------------------------------------------------- |
-| GET    | `/`                | Implemented | renders `index.ejs`; redirects to `/shelf` when signed in                               |
-| GET    | `/login`           | Implemented | renders `auth.ejs` with auth assets (login tab); redirects to `/shelf` when signed in   |
-| GET    | `/register`        | Implemented | renders `auth.ejs` with auth assets (register tab); redirects to `/shelf` when signed in |
-| GET    | `/shelf`           | Implemented | renders `shelf.ejs`; redirects to `/login` without a session                            |
-| GET    | `/shelf/games/:gameId/log` | Implemented | renders `game-log.ejs` for an owned game; redirects to `/shelf` otherwise       |
-| ALL    | `/api/auth/*splat` | Implemented | Better Auth handler (sign-up/sign-in/sign-out etc)                                      |
-| GET    | `/api/me`          | Implemented | returns current session/user JSON; 401 without a session                                |
-| GET    | `/api/games`       | Implemented | signed-in user's games with embedded sessions and `totalHours`; `?status=`, `?archived=true\|false\|all`, `?sort=added\|priority` |
-| POST   | `/api/games`       | Implemented | creates a game owned by the session user (body `userId` ignored)                        |
-| PATCH  | `/api/games/:id`   | Implemented | updates title/platform/status/priority/rating/coverUrl/notes/archived; 404 on another user's row, 409 on a wishlist-rule violation |
-| DELETE | `/api/games/:id`   | Implemented | deletes an owned game (cascades its play sessions); 404 otherwise                       |
-| GET    | `/api/games/:gameId/sessions` | Implemented | sessions for an owned game, newest first, plus `totalHours`; foreign game 404s |
-| POST   | `/api/games/:gameId/sessions` | Implemented | logs a session against an owned game; `gameId`/`userId` come from route + session; 409 if the game is wishlisted |
-| PATCH  | `/api/games/:gameId/sessions/:sessionId` | Implemented | updates hours/sessionDate/notes; 404 on another user's row     |
-| DELETE | `/api/games/:gameId/sessions/:sessionId` | Implemented | deletes an owned session (game stays); 404 otherwise            |
-| GET    | `/api/igdb/search` | Implemented | auth-gated IGDB title search (`?q=`, optional `?limit=`); needs `TWITCH_CLIENT_ID`/`TWITCH_CLIENT_SECRET` |
+| Method | Path                                     | Status      | Behavior                                                                                                                           |
+| ------ | ---------------------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/`                                      | Implemented | renders `index.ejs`; redirects to `/shelf` when signed in                                                                          |
+| GET    | `/login`                                 | Implemented | renders `auth.ejs` with auth assets (login tab); redirects to `/shelf` when signed in                                              |
+| GET    | `/register`                              | Implemented | renders `auth.ejs` with auth assets (register tab); redirects to `/shelf` when signed in                                           |
+| GET    | `/shelf`                                 | Implemented | renders `shelf.ejs`; redirects to `/login` without a session                                                                       |
+| GET    | `/shelf/games/:gameId/log`               | Implemented | renders `game-log.ejs` for an owned game; redirects to `/shelf` otherwise                                                          |
+| ALL    | `/api/auth/*splat`                       | Implemented | Better Auth handler (sign-up/sign-in/sign-out etc)                                                                                 |
+| GET    | `/api/me`                                | Implemented | returns current session/user JSON; 401 without a session                                                                           |
+| GET    | `/api/games`                             | Implemented | signed-in user's games with embedded sessions and `totalHours`; `?status=`, `?archived=true\|false\|all`, `?sort=added\|priority`  |
+| POST   | `/api/games`                             | Implemented | creates a game owned by the session user (body `userId` ignored)                                                                   |
+| PATCH  | `/api/games/:id`                         | Implemented | updates title/platform/status/priority/rating/coverUrl/notes/archived; 404 on another user's row, 409 on a wishlist-rule violation |
+| DELETE | `/api/games/:id`                         | Implemented | deletes an owned game (cascades its play sessions); 404 otherwise                                                                  |
+| GET    | `/api/games/:gameId/sessions`            | Implemented | sessions for an owned game, newest first, plus `totalHours`; foreign game 404s                                                     |
+| POST   | `/api/games/:gameId/sessions`            | Implemented | logs a session against an owned game; `gameId`/`userId` come from route + session; 409 if the game is wishlisted                   |
+| PATCH  | `/api/games/:gameId/sessions/:sessionId` | Implemented | updates hours/sessionDate/notes; 404 on another user's row                                                                         |
+| DELETE | `/api/games/:gameId/sessions/:sessionId` | Implemented | deletes an owned session (game stays); 404 otherwise                                                                               |
+| GET    | `/api/igdb/search`                       | Implemented | auth-gated IGDB title search (`?q=`, optional `?limit=`); needs `TWITCH_CLIENT_ID`/`TWITCH_CLIENT_SECRET`                          |
 
 **Status codes.** `400` means the payload's shape is wrong (validation), `401`
-no session, `404` the row does not exist *or* belongs to someone else, and `409`
+no session, `404` the row does not exist _or_ belongs to someone else, and `409`
 a well-formed request that would break one of the wishlist rules in
 `src/server/lib/gameRules.ts`. Ownership is always checked before the rules, so
 another user's game reports `404` rather than leaking that a rule exists.
@@ -312,31 +312,13 @@ another user's game reports `404` rather than leaking that a rule exists.
 - `npm run test:watch` — same suite in watch mode
 - `npx prisma migrate deploy` — apply migrations to target database
 
-## 7. Next Milestones
-
-1. ~~Add full CRUD routes for `Game` (backlog + wishlist, via `status`) and `PlaySession`~~ done
-2. ~~Add authenticated ownership flow so every game/session query is scoped to
-   `session.user.id`~~ done for games and play sessions
-3. ~~Add validation and centralized error handling for all write operations~~ done
-4. ~~Build authenticated UI workflows for managing backlog, sessions, and
-   wishlist data~~ done (`/shelf` with its filter bar, and
-   `/shelf/games/:gameId/log` with session editing)
-5. ~~Integrate IGDB API~~ done (`GET /api/igdb/search`, wired into the Add Game
-   form as a type-ahead and used by the seed script for cover art)
-6. ~~Add seed/sample data workflow~~ done (`npm run db:seed` + `npm run db:export`)
-7. ~~Add wishlist business rules and the tests to cover them~~ done
-   (`src/server/lib/gameRules.ts`)
-8. Write the Final Report (see §9) — not started
-
-## 8. Status Against the Rubric
+## Rubric Completion
 
 Verified against the code and a running instance on 2026-08-11.
 
 ### Minimum requirements
 
-- **Final Report** — **NOT STARTED.** Nothing in the repo covers task
-  distribution, how AI was used, or screenshots of the finished product. This is
-  the only outstanding −20pt item.
+- **Final Report** to be included with submission.
 - **Three tables, 10+ fields combined** — satisfied. Six tables (`Game`,
   `PlaySession`, `User`, `Session`, `Account`, `Verification`), 11 fields on
   `Game` alone.
@@ -354,7 +336,7 @@ Verified against the code and a running instance on 2026-08-11.
   selects), radio (`priority`), checkbox (`archived`), `textarea` (`notes`),
   number (`rating`, `hours`), and date (`sessionDate`).
 - **Web storage or Sessions (15pts)** — satisfied twice over: Better Auth cookie
-  sessions backed by the `Session` table, *and* `localStorage` personalization
+  sessions backed by the `Session` table, _and_ `localStorage` personalization
   that remembers the shelf's filter/sort view
   (`src/client/lib/shelfFilters.ts`, key `gameshelf:shelf-filters`).
 - **Update records, pre-filled, 3+ fields (15pts)** — satisfied twice. The shelf
@@ -374,25 +356,3 @@ Verified against the code and a running instance on 2026-08-11.
   (78 distinct properties across the SCSS files). All checked-in copy (views,
   seed notes, client strings) reads cleanly; a final proofread of the report
   itself is still worth doing.
-
-> **Watch the SQL export.** `npm run db:seed` creates exactly 6 games and 8 play
-> sessions, and that is what `gameshelf-data.sql` currently contains. Anything
-> logged through the UI afterwards lands in the same database and would be swept
-> into the next `npm run db:export`, so re-seed first.
-
-## 9. Outstanding Work
-
-1. **Final Report** — the one remaining rubric blocker. Needs title,
-   description, task distribution across the four team members, an explanation
-   of how AI was used, the database schema (§4 can be lifted directly), and
-   screenshots of the shelf, the edit dialog, and the play log.
-2. **Re-seed before the final SQL export** so the submitted data is the clean
-   6-game / 8-session seed set rather than whatever has accumulated in the dev
-   database.
-3. Optional cleanup: `@better-auth/prisma-adapter` is in `dependencies` but
-   nothing imports it.
-
-Resolved on 2026-08-11: the dead `/api/sessions` mount and duplicate
-`/api/igdb` mount in `src/server/index.ts`; the missing `q` validation in
-`src/server/routes/igdb.ts` that left 3 tests failing; the inset ridge bar on
-the play log's Total Hours card; and the unused `window.GAME_LOG` declaration.
