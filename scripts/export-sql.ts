@@ -33,7 +33,10 @@ function sanitizeDump(sql: string): string {
     .split(/\r?\n/)
     .filter((line) => {
       const trimmed = line.trim();
-      if (trimmed.startsWith("\\restrict") || trimmed.startsWith("\\unrestrict")) {
+      if (
+        trimmed.startsWith("\\restrict") ||
+        trimmed.startsWith("\\unrestrict")
+      ) {
         return false;
       }
       if (trimmed.startsWith("SET transaction_timeout")) {
