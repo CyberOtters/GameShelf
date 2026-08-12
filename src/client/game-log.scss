@@ -75,10 +75,16 @@ body {
   }
 }
 
+// The cartridge ridges are a child of .card, so the padding goes on the inner
+// body — same as .card-body and .game-card-body. Padding the card itself would
+// inset the ridge bar instead of letting it sit flush under the top border.
 .log-summary {
   margin-bottom: 1.4rem;
-  padding: 1.2rem 1.4rem;
   text-align: center;
+}
+
+.log-summary-body {
+  padding: 1.2rem 1.4rem;
 }
 
 .log-summary-label {
