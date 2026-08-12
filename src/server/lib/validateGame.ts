@@ -102,6 +102,11 @@ export const gameFiltersSchema = z.object({
     .enum(["true", "false", "all"], { error: "must be true, false, or all" })
     .default("false")
     .transform((value) => (value === "all" ? undefined : value === "true")),
+  // `priority` is what makes the wishlist view useful — it ranks what to buy
+  // next. `added` is the default everywhere else.
+  sort: z
+    .enum(["added", "priority"], { error: "must be added or priority" })
+    .default("added"),
 });
 
 export type GameInput = z.infer<typeof createGameSchema>;

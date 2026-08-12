@@ -1,3 +1,6 @@
+import { ApiError, apiError } from "./lib/api.ts";
+import { dateInputValue, formatHours } from "./lib/format.ts";
+
 type PlaySession = {
   id: number;
   gameId: number;
@@ -12,12 +15,6 @@ type SessionSummary = {
   sessions: PlaySession[];
 };
 
-declare global {
-  interface Window {
-    GAME_LOG: { gameId: number };
-  }
-}
-
 function getRequiredElement<T extends Element>(selector: string): T {
   const element = document.querySelector<T>(selector);
   if (!element) throw new Error(`Required element not found: ${selector}`);
@@ -27,8 +24,11 @@ function getRequiredElement<T extends Element>(selector: string): T {
 const logMessage = getRequiredElement<HTMLElement>("#log-message");
 const sessionLog = getRequiredElement<HTMLElement>("#session-log");
 const totalHoursEl = getRequiredElement<HTMLElement>("#total-hours");
-const openSessionFormButton =
-  getRequiredElement<HTMLButtonElement>("#open-session-form");
+// Absent for a wishlisted game — the API refuses play time on one, so the view
+// does not render the button.
+const openSessionFormButton = document.querySelector<HTMLButtonElement>(
+  "#open-session-form",
+);
 const signOutButton = getRequiredElement<HTMLButtonElement>("#sign-out");
 const sessionFormDialog =
   getRequiredElement<HTMLDialogElement>("#session-form-dialog");
@@ -38,6 +38,13 @@ const cancelSessionFormButton =
 const closeSessionFormButton =
   getRequiredElement<HTMLButtonElement>("#close-session-form");
 const sessionDateField = getRequiredElement<HTMLInputElement>("#session-date");
+const sessionHoursField =
+  getRequiredElement<HTMLInputElement>("#session-hours");
+const sessionNotesField =
+  getRequiredElement<HTMLTextAreaElement>("#session-notes");
+const sessionFormTitle = getRequiredElement<HTMLElement>("#session-form-title");
+const saveSessionButton =
+  getRequiredElement<HTMLButtonElement>("#save-session-button");
 
 function parseGameIdFromPath(): number {
   const match = /^\/shelf\/games\/(\d+)\/log\/?$/.exec(window.location.pathname);
@@ -47,25 +54,27 @@ function parseGameIdFromPath(): number {
 
 const gameId = parseGameIdFromPath();
 
-function formatHours(totalHours: number): string {
-  if (totalHours === 0) return "0 hrs";
-  const formatted = Number.isInteger(totalHours)
-    ? String(totalHours)
-    : totalHours.toFixed(1);
-  return `${formatted} hr${totalHours === 1 ? "" : "s"}`;
-}
-
-function todayDateInputValue(): string {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
+/** The session being edited, or null when the dialog is logging a new one. */
+let editingSessionId: number | null = null;
 
 function openSessionForm(): void {
+  editingSessionId = null;
   sessionForm.reset();
-  sessionDateField.value = todayDateInputValue();
+  sessionFormTitle.textContent = "Log Session";
+  saveSessionButton.textContent = "Log Session";
+  sessionDateField.value = dateInputValue();
+  sessionFormDialog.showModal();
+}
+
+/** Same dialog, pre-filled with the session's stored hours, date, and notes. */
+function openEditSessionForm(session: PlaySession): void {
+  editingSessionId = session.id;
+  sessionForm.reset();
+  sessionFormTitle.textContent = "Edit Session";
+  saveSessionButton.textContent = "Save Changes";
+  sessionHoursField.value = String(session.hours);
+  sessionDateField.value = session.sessionDate;
+  sessionNotesField.value = session.notes ?? "";
   sessionFormDialog.showModal();
 }
 
@@ -78,7 +87,9 @@ function renderSessions(summary: SessionSummary): void {
   sessionLog.replaceChildren();
 
   if (summary.sessions.length === 0) {
-    logMessage.textContent = "No sessions logged yet. Log your first session above.";
+    logMessage.textContent = openSessionFormButton
+      ? "No sessions logged yet. Log your first session above."
+      : "This game is on your wishlist, so there is no play time to show yet.";
     logMessage.hidden = false;
     sessionLog.hidden = true;
     return;
@@ -112,14 +123,63 @@ function renderSessions(summary: SessionSummary): void {
       entry.append(notes);
     }
 
+    entry.append(createSessionActions(session));
     sessionLog.append(entry);
   }
+}
+
+function createSessionActions(session: PlaySession): HTMLElement {
+  const actions = document.createElement("div");
+  actions.className = "session-entry-actions";
+
+  const editButton = document.createElement("button");
+  editButton.type = "button";
+  editButton.className = "session-edit-button";
+  editButton.textContent = "Edit";
+  editButton.setAttribute(
+    "aria-label",
+    `Edit the session on ${session.sessionDate}`,
+  );
+  editButton.addEventListener("click", () => openEditSessionForm(session));
+
+  const deleteButton = document.createElement("button");
+  deleteButton.type = "button";
+  deleteButton.className = "session-delete-button";
+  deleteButton.textContent = "Delete";
+  deleteButton.setAttribute(
+    "aria-label",
+    `Delete the session on ${session.sessionDate}`,
+  );
+  deleteButton.addEventListener("click", () => {
+    void deleteSession(session).catch(handleError);
+  });
+
+  actions.append(editButton, deleteButton);
+  return actions;
+}
+
+async function deleteSession(session: PlaySession): Promise<void> {
+  const confirmed = confirm(
+    `Delete the ${formatHours(session.hours)} session on ${session.sessionDate}?`,
+  );
+  if (!confirmed) return;
+
+  const response = await fetch(
+    `/api/games/${gameId}/sessions/${session.id}`,
+    { method: "DELETE" },
+  );
+
+  if (!response.ok) {
+    throw await apiError(response, "Could not delete that session.");
+  }
+
+  await loadSessions();
 }
 
 async function loadSessions(): Promise<void> {
   const response = await fetch(`/api/games/${gameId}/sessions`);
   if (!response.ok) {
-    throw new Error(`Failed to load sessions: ${response.status}`);
+    throw await apiError(response, "Could not load the play log.");
   }
 
   const summary: SessionSummary = await response.json();
@@ -138,14 +198,26 @@ async function handleSessionSubmit(event: SubmitEvent): Promise<void> {
     notes: notesValue ? String(notesValue) : null,
   };
 
-  const response = await fetch(`/api/games/${gameId}/sessions`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(sessionInput),
-  });
+  const editing = editingSessionId !== null;
+
+  const response = await fetch(
+    editing
+      ? `/api/games/${gameId}/sessions/${editingSessionId}`
+      : `/api/games/${gameId}/sessions`,
+    {
+      method: editing ? "PATCH" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(sessionInput),
+    },
+  );
 
   if (!response.ok) {
-    throw new Error(`Failed to log session: ${response.status}`);
+    throw await apiError(
+      response,
+      editing
+        ? "Could not save changes to that session."
+        : "Could not log that session.",
+    );
   }
 
   closeSessionForm();
@@ -154,9 +226,9 @@ async function handleSessionSubmit(event: SubmitEvent): Promise<void> {
 
 function handleError(error: unknown): void {
   console.error(error);
-  logMessage.textContent = "Could not load the play log.";
+  logMessage.textContent =
+    error instanceof ApiError ? error.message : "Could not load the play log.";
   logMessage.hidden = false;
-  sessionLog.hidden = true;
 }
 
 async function handleSignOut(): Promise<void> {
@@ -164,9 +236,13 @@ async function handleSignOut(): Promise<void> {
   location.href = "/";
 }
 
-openSessionFormButton.addEventListener("click", openSessionForm);
+openSessionFormButton?.addEventListener("click", openSessionForm);
 cancelSessionFormButton.addEventListener("click", closeSessionForm);
 closeSessionFormButton.addEventListener("click", closeSessionForm);
+sessionFormDialog.addEventListener("close", () => {
+  sessionForm.reset();
+  editingSessionId = null;
+});
 sessionForm.addEventListener("submit", (event) => {
   void handleSessionSubmit(event).catch(handleError);
 });

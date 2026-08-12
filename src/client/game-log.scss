@@ -75,10 +75,16 @@ body {
   }
 }
 
+// The cartridge ridges are a child of .card, so the padding goes on the inner
+// body — same as .card-body and .game-card-body. Padding the card itself would
+// inset the ridge bar instead of letting it sit flush under the top border.
 .log-summary {
   margin-bottom: 1.4rem;
-  padding: 1.2rem 1.4rem;
   text-align: center;
+}
+
+.log-summary-body {
+  padding: 1.2rem 1.4rem;
 }
 
 .log-summary-label {
@@ -111,6 +117,30 @@ body {
   padding: 1rem 1.1rem;
   display: grid;
   gap: 0.45rem;
+}
+
+.session-entry-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-top: 0.15rem;
+
+  button {
+    font-family: "Bungee", cursive;
+    font-size: 0.62rem;
+    padding: 0.4rem 0.7rem;
+    border: 2.5px solid var(--ink);
+    border-radius: 9px;
+    background: var(--card);
+    box-shadow: 3px 3px 0 var(--ink);
+    color: var(--ink);
+    @include pressable;
+  }
+}
+
+.session-delete-button {
+  background: var(--tomato);
+  color: #fff;
 }
 
 .session-entry-head {

@@ -25,7 +25,7 @@ shelfRouter.get("/games/:gameId/log", async (req, res) => {
 
   const game = await prisma.game.findFirst({
     where: { id: gameId, userId: req.userId },
-    select: { id: true, title: true, platform: true },
+    select: { id: true, title: true, platform: true, status: true },
   });
 
   if (!game) {

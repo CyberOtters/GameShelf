@@ -12,20 +12,32 @@ Implemented today:
 - Prisma models and migrations for game data and auth tables
 - Auth-gated `Game` CRUD scoped to the signed-in user, with zod request
   validation and centralized JSON errors
-- Auth-gated `PlaySession` CRUD nested under `/api/games/:id/sessions`
-- Shelf UI for managing games and logging play sessions with total hours
+- Auth-gated `PlaySession` CRUD nested under `/api/games/:gameId/sessions`
+- Shelf page (`/shelf`) for adding, editing, archiving, and deleting games,
+  with a pre-filled edit dialog and per-game play-session logging
+- Shelf filter bar — status (including a Wishlist view), archived, and sort
+  (recently added or priority), with a live result count and Reset
+- localStorage personalization: the chosen filter/sort view is remembered
+  across reloads under `gameshelf:shelf-filters`
+- Per-game play log page (`/shelf/games/:gameId/log`) with total hours and
+  per-entry editing (pre-filled) and deletion
+- Wishlist business rules enforced server-side and reflected in the UI: play
+  time cannot be logged against a wishlisted game, and a game with a play
+  history cannot move back to the wishlist
+- IGDB game search endpoint (`/api/igdb/search`), server-side via the
+  Twitch-authenticated helper in `src/server/lib/igdb.ts`, wired into the
+  add-game form as a debounced type-ahead that fills in title, platform,
+  rating, and cover art
 - Demo seed script (`npm run db:seed`) and SQL export workflow
+  (`npm run db:export`)
 - Build pipeline for server, client JS, and SCSS assets
 - Prisma Compute deployment configuration
 
-- Play session CRUD scoped to the signed-in user (`/api/sessions`)
-- IGDB game search endpoint (`/api/igdb/search`), server-side via the
-  Twitch-authenticated helper in `src/server/lib/igdb.ts`
-
-Still in progress:
-
-- External API integration (IGDB)
-- Test coverage beyond the `/api/games` and `/api/games/:id/sessions` route tests
+Test coverage: 119 tests across 7 files — the three route suites, the business
+rules and page/API auth guards, and the shared client helpers. Deliberately not
+covered: DOM-driving client tests (the browser code keeps its logic in
+`src/client/lib`, which is unit-tested directly, so the suite needs no jsdom)
+and the live IGDB call (it would need Twitch credentials in CI).
 
 ## Tech Stack
 
@@ -45,23 +57,47 @@ src/
 	server/
 		index.ts
 		lib/
-			auth.ts
-			prisma.ts
+			auth.ts            Better Auth setup
+			demoAccount.ts     demo credentials shared by the seed and login page
+			errors.ts          HttpError helpers + centralized JSON error handler
+			gameRules.ts       wishlist business rules (pure, 409s on violation)
+			igdb.ts            Twitch-authenticated IGDB client
+			pageAuth.ts        session guards for HTML page routes
+			prisma.ts          Prisma client + pg adapter
+			requireAuth.ts     session guard for JSON API routes
+			validateGame.ts    zod schemas for game requests
+			validateSession.ts zod schemas + serializers for play sessions
+		routes/
+			games.ts           /api/games
+			sessions.ts        /api/games/:gameId/sessions
+			igdb.ts            /api/igdb
+			shelf.ts           /shelf pages
+			*.test.ts          Vitest route tests
 		views/
 			index.ejs
 			auth.ejs
+			shelf.ejs
+			game-log.ejs
 			partials/
 	client/
-		home.ts
-		auth.ts
+		home.ts / home.scss
+		auth.ts / auth.scss
+		shelf.ts / shelf.scss
+		game-log.ts / game-log.scss
+		lib/               DOM-free helpers, unit-tested under Node
+			api.ts           ApiError + the {error, fields} response shape
+			format.ts        hour and date formatting
+			shelfFilters.ts  filter state + the localStorage round-trip
+			*.test.ts
 		_tokens.scss
 		shared.scss
-		home.scss
-		auth.scss
 		tsconfig.json
 prisma/
 	schema.prisma
+	seed.ts
 	migrations/
+scripts/
+	export-sql.ts
 public/
 generated/
 	prisma/
@@ -188,18 +224,37 @@ Source of truth: `src/server/lib/demoAccount.ts`.
 - `npm run typecheck`: runs TS type checks for server and client tsconfigs
 - `npm run start`: runs the server once with `tsx`
 - `npm run db:seed`: runs `prisma/seed.ts` to create the demo user, games, and sessions
+- `npm run db:export`: runs `scripts/export-sql.ts` to write `gameshelf-data.sql`
 - `npm run deploy`: deploys with `dotenvx` + `bunx @prisma/cli app deploy --db` using `deploy.env`
 - `npm test`: runs the Vitest suite once; `npm run test:watch` for watch mode.
   The route tests hit a real database, so start one first (`npx prisma dev`).
   They create and delete their own `@gameshelf.test` users and rows.
+  All 119 tests currently pass. The pure helper tests under `src/client/lib`
+  and `gameRules.test.ts` run without a database; the route and auth suites
+  need one.
+
+## Known Issues
+
+- **Prisma Dev can wedge under concurrent connections.** If a write fails with
+  `25006 cannot execute INSERT in a read-only transaction`, every later query —
+  including from brand-new connections — returns `25P02 current transaction is
+  aborted` until Prisma Dev is restarted. The seed, export, and test commands
+  each connect once and are unaffected; it shows up when the dev server's
+  connection pool is running alongside them. Restart `prisma dev` to clear it.
+- **Re-seed before the final SQL export.** Sessions logged through the UI stay
+  in the dev database and would be swept into the next `npm run db:export`. Run
+  `npm run db:seed` first so the export is the clean 6-game / 8-session set.
 
 ## Routes (Current)
 
 ### Page Routes
 
-- `GET /`: home page (session-aware card UI)
-- `GET /login`: auth page with Sign In tab
-- `GET /register`: auth page with Sign Up tab
+- `GET /`: home page (session-aware card UI); redirects to `/shelf` when signed in
+- `GET /login`: auth page with Sign In tab; redirects to `/shelf` when signed in
+- `GET /register`: auth page with Sign Up tab; redirects to `/shelf` when signed in
+- `GET /shelf`: the game shelf — requires a session, otherwise redirects to `/login`
+- `GET /shelf/games/:gameId/log`: play log for one owned game; an unknown or
+  someone else's game redirects back to `/shelf`
 
 ### API Routes
 
@@ -210,7 +265,9 @@ Source of truth: `src/server/lib/demoAccount.ts`.
   `{ "error": "...", "fields": { ... } }`.
 
 - `GET /api/games`: the user's games, filterable with `?status=BACKLOG` and
-  `?archived=true|false|all` (archived rows are hidden by default)
+  `?archived=true|false|all` (archived rows are hidden by default), and
+  orderable with `?sort=added|priority` (`priority` ranks HIGH → MEDIUM → LOW
+  and puts unranked games last)
 - `POST /api/games`: create a game — `userId` always comes from the session
 - `PATCH /api/games/:id`: update `title`, `platform`, `status`, `priority`,
   `rating`, `coverUrl`, `notes`, or `archived`
@@ -225,6 +282,51 @@ serialize `hours` as a JSON number and `sessionDate` as `YYYY-MM-DD`.
 - `POST /api/games/:gameId/sessions`: log hours against an owned game
 - `PATCH /api/games/:gameId/sessions/:sessionId`: update hours, date, or notes
 - `DELETE /api/games/:gameId/sessions/:sessionId`: delete one session
+
+### Business rules and status codes
+
+`400` means the payload's shape is wrong, `401` no session, `404` the row does
+not exist *or* belongs to another user, and `409` a well-formed request that
+would break one of the wishlist rules in `src/server/lib/gameRules.ts`:
+
+- a game with logged play sessions cannot move back to the wishlist
+- play time cannot be logged against a wishlisted game
+
+Rating is not restricted — a wishlisted game may carry a score.
+
+Ownership is checked before the rules, so another user's game reports `404`
+rather than revealing that a rule exists. The 409 messages are written for the
+user and the client renders them verbatim.
+
+The IGDB search route is also auth-gated, so it cannot be used as an open proxy
+for the Twitch credentials:
+
+- `GET /api/igdb/search?q=hades&limit=8`: title search against IGDB, returning
+  `{ igdbId, title, coverUrl, releaseYear, platforms, genres, rating }` per hit.
+  `limit` is optional (default 8, max 25). Requires `TWITCH_CLIENT_ID` and
+  `TWITCH_CLIENT_SECRET`; if IGDB is down or misconfigured the route returns 503
+  and the add-game form falls back to manual entry.
+
+### Where the Fetch calls are (submission note)
+
+Client-side `fetch()` calls, all in `src/client`:
+
+| File | Endpoint | Purpose |
+| ---- | -------- | ------- |
+| `shelf.ts` | `GET /api/igdb/search?q=` | debounced IGDB type-ahead in the add-game form (external API) |
+| `shelf.ts` | `GET /api/games?status=&archived=&sort=` | load the shelf for the current filter/sort view |
+| `shelf.ts` | `POST /api/games`, `PATCH /api/games/:id`, `DELETE /api/games/:id` | add, edit, delete a game |
+| `shelf.ts` | `POST /api/games/:gameId/sessions` | log a session from a shelf card |
+| `game-log.ts` | `GET`/`POST /api/games/:gameId/sessions` | read and add sessions on the play log page |
+| `game-log.ts` | `PATCH`/`DELETE /api/games/:gameId/sessions/:sessionId` | edit or delete one session from the play log |
+| `home.ts` | `GET /api/me` | session-aware home card |
+| `auth.ts` | `POST /api/auth/sign-in/email`, `POST /api/auth/sign-up/email` | sign in / sign up |
+| `shelf.ts`, `game-log.ts`, `home.ts` | `POST /api/auth/sign-out` | sign out |
+
+The external Web API is IGDB (via Twitch OAuth), called server-side from
+`src/server/lib/igdb.ts` and exposed to the browser through `/api/igdb/search`.
+The local Web APIs are `/api/games`, `/api/games/:gameId/sessions`, `/api/me`,
+and the Better Auth endpoints.
 
 ## SQL Export (Submission Requirement)
 

@@ -8,6 +8,7 @@ import {
   serializePlaySession,
   sumSessionHours,
 } from "../lib/validateSession.ts";
+import { assertGameIsPlayable } from "../lib/gameRules.ts";
 
 export const sessionsRouter = Router({ mergeParams: true });
 
@@ -36,7 +37,7 @@ function sessionId(raw: string) {
 async function requireOwnedGame(gameIdValue: number, userId: string) {
   const game = await prisma.game.findFirst({
     where: { id: gameIdValue, userId },
-    select: { id: true },
+    select: { id: true, status: true },
   });
   if (!game) throw notFound("Game not found");
   return game;
@@ -63,7 +64,11 @@ sessionsRouter.get("/", async (req, res) => {
 sessionsRouter.post("/", async (req, res) => {
   const userId = sessionUserId(req);
   const gameIdValue = routeGameId(req.params);
-  await requireOwnedGame(gameIdValue, userId);
+  const game = await requireOwnedGame(gameIdValue, userId);
+  // Logging hours is the one write that says "I have played this", so it is
+  // where the wishlist rule bites. Edits and deletes stay open so an existing
+  // log can always be corrected.
+  assertGameIsPlayable(game.status);
 
   const input = parseCreateSession(req.body);
 

@@ -69,11 +69,9 @@ app.get("/api/me", requireAuth, async (req, res) => {
 app.use("/shelf", shelfRouter);
 
 app.use("/api/games", gamesRouter);
+// Sessions are always addressed through their parent game — the router reads
+// :gameId off the route to check ownership before touching any rows.
 app.use("/api/games/:gameId/sessions", sessionsRouter);
-app.use("/api/igdb", igdbRouter);
-
-app.use("/api/sessions", sessionsRouter);
-
 app.use("/api/igdb", igdbRouter);
 
 app.use(errorHandler);

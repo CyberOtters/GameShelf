@@ -1,3 +1,15 @@
+import { ApiError, apiError } from "./lib/api.ts";
+import { dateInputValue, formatHours } from "./lib/format.ts";
+import {
+  DEFAULT_FILTERS,
+  defaultStorage,
+  filtersToQuery,
+  normalizeFilters,
+  readFilters,
+  writeFilters,
+  type ShelfFilters,
+} from "./lib/shelfFilters.ts";
+
 type GameStatus = "WISHLIST" | "BACKLOG" | "PLAYING" | "COMPLETED" | "DROPPED";
 
 type Priority = "HIGH" | "MEDIUM" | "LOW";
@@ -62,6 +74,7 @@ function getRequiredElement<T extends Element>(selector: string): T {
   return element;
 }
 
+
 const gameGrid = getRequiredElement<HTMLElement>("#game-grid");
 const shelfMessage = getRequiredElement<HTMLElement>("#shelf-message");
 const addGameButton = getRequiredElement<HTMLButtonElement>("#open-add-form");
@@ -98,6 +111,20 @@ const sessionHoursField =
 const sessionDateField = getRequiredElement<HTMLInputElement>("#session-date");
 const sessionNotesField =
   getRequiredElement<HTMLTextAreaElement>("#session-notes");
+
+const statusFilterField =
+  getRequiredElement<HTMLSelectElement>("#filter-status");
+const archivedFilterField =
+  getRequiredElement<HTMLSelectElement>("#filter-archived");
+const sortFilterField = getRequiredElement<HTMLSelectElement>("#filter-sort");
+const resetFiltersButton =
+  getRequiredElement<HTMLButtonElement>("#reset-filters");
+const filterCount = getRequiredElement<HTMLElement>("#filter-count");
+
+const storage = defaultStorage();
+
+/** Restored from localStorage so the view survives a reload. */
+let filters: ShelfFilters = readFilters(storage);
 
 /** The game being edited, or null when the form is adding a new one. */
 let editingGameId: number | null = null;
@@ -328,20 +355,12 @@ function closeGameForm(): void {
   gameFormDialog.close();
 }
 
-function todayDateInputValue(): string {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
 function openSessionForm(game: Game): void {
   loggingSessionGame = game;
   sessionForm.reset();
   sessionFormTitle.textContent = "Log Session";
   sessionGameLabel.textContent = game.title;
-  sessionDateField.value = todayDateInputValue();
+  sessionDateField.value = dateInputValue();
   saveSessionButton.textContent = "Log Session";
   sessionFormDialog.showModal();
 }
@@ -350,22 +369,47 @@ function closeSessionForm(): void {
   sessionFormDialog.close();
 }
 
-function formatHours(totalHours: number): string {
-  if (totalHours === 0) return "0 hrs";
-  const formatted = Number.isInteger(totalHours)
-    ? String(totalHours)
-    : totalHours.toFixed(1);
-  return `${formatted} hr${totalHours === 1 ? "" : "s"}`;
+/** Pushes the current filter state onto the three selects. */
+function syncFilterControls(): void {
+  statusFilterField.value = filters.status;
+  archivedFilterField.value = filters.archived;
+  sortFilterField.value = filters.sort;
 }
 
-// Load games from /api/games. `archived=all` because the shelf shows the whole
-// collection — the endpoint hides archived rows otherwise, which would make a
-// game vanish the moment it was archived from the edit form.
+/** Reads the selects back, persists the result, and reloads the grid. */
+function applyFilterControls(): void {
+  filters = normalizeFilters({
+    status: statusFilterField.value,
+    archived: archivedFilterField.value,
+    sort: sortFilterField.value,
+  });
+  writeFilters(storage, filters);
+  loadGames().catch(handleLoadError);
+}
+
+function resetFilters(): void {
+  filters = { ...DEFAULT_FILTERS };
+  writeFilters(storage, filters);
+  syncFilterControls();
+  loadGames().catch(handleLoadError);
+}
+
+/** The empty-shelf copy depends on whether a filter is hiding everything. */
+function emptyMessage(): string {
+  if (filters.status === "WISHLIST") {
+    return "Nothing on your wishlist yet. Add a game and set its status to Wishlist.";
+  }
+  if (filters.status !== "ALL" || filters.archived !== "all") {
+    return "No games match these filters. Try Reset.";
+  }
+  return "Your shelf is empty. Add a game to start.";
+}
+
 async function loadGames(): Promise<void> {
-  const response = await fetch("/api/games?archived=all");
+  const response = await fetch(`/api/games?${filtersToQuery(filters)}`);
 
   if (!response.ok) {
-    throw new Error(`Failed to load games: ${response.status}`);
+    throw await apiError(response, "Could not load your games.");
   }
   const games: Game[] = await response.json();
   renderGames(games);
@@ -373,8 +417,14 @@ async function loadGames(): Promise<void> {
 
 function renderGames(games: Game[]): void {
   gameGrid.replaceChildren();
+
+  filterCount.textContent =
+    games.length === 0
+      ? ""
+      : `${games.length} game${games.length === 1 ? "" : "s"}`;
+
   if (games.length === 0) {
-    shelfMessage.textContent = "Your shelf is empty. Add a game to start.";
+    shelfMessage.textContent = emptyMessage();
     shelfMessage.hidden = false;
     return;
   }
@@ -484,6 +534,10 @@ function createGameCard(game: Game): HTMLElement {
   editButton.setAttribute("aria-label", `Edit ${game.title}`);
   editButton.addEventListener("click", () => openEditGameForm(game));
 
+  // The API rejects play time on a wishlisted game, so don't offer the button
+  // — a wishlist entry is something you haven't bought yet.
+  const playable = game.status !== "WISHLIST";
+
   const logSessionButton = document.createElement("button");
   logSessionButton.type = "button";
   logSessionButton.className = "log-session-button";
@@ -504,7 +558,8 @@ function createGameCard(game: Game): HTMLElement {
   });
 
   const actions = element("div", "game-card-actions");
-  actions.append(logSessionButton, editButton, deleteButton);
+  if (playable) actions.append(logSessionButton);
+  actions.append(editButton, deleteButton);
 
   const foot = element("div", "game-foot");
   foot.append(
@@ -559,8 +614,9 @@ async function handleGameSubmit(event: SubmitEvent): Promise<void> {
   );
 
   if (!response.ok) {
-    throw new Error(
-      `Failed to ${editing ? "update" : "create"} game: ${response.status}`,
+    throw await apiError(
+      response,
+      `Could not ${editing ? "save changes to" : "add"} that game.`,
     );
   }
 
@@ -577,7 +633,7 @@ async function deleteGame(game: Game): Promise<void> {
   const response = await fetch(`/api/games/${game.id}`, { method: "DELETE" });
 
   if (!response.ok) {
-    throw new Error(`Failed to delete game: ${response.status}`);
+    throw await apiError(response, "Could not delete that game.");
   }
 
   if (editingGameId === game.id) closeGameForm();
@@ -606,7 +662,7 @@ async function handleSessionSubmit(event: SubmitEvent): Promise<void> {
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to log session: ${response.status}`);
+    throw await apiError(response, "Could not log that session.");
   }
 
   closeSessionForm();
@@ -616,14 +672,16 @@ async function handleSessionSubmit(event: SubmitEvent): Promise<void> {
 function handleActionError(error: unknown): void {
   console.error(error);
 
-  if (error instanceof Error && error.message.includes("401")) {
+  if (error instanceof ApiError && error.status === 401) {
     shelfMessage.textContent =
       "Your session expired. Sign in again from the home page.";
-  } else if (error instanceof Error && error.message.includes("500")) {
+  } else if (error instanceof ApiError && error.status === 500) {
     shelfMessage.textContent =
       "The database connection dropped. Restart npm run dev, then refresh.";
-  } else if (error instanceof Error && error.message.includes("delete")) {
-    shelfMessage.textContent = "Could not delete that game.";
+  } else if (error instanceof ApiError) {
+    // 400s and the 409s from the wishlist rules already carry a message
+    // written for the user.
+    shelfMessage.textContent = error.message;
   } else {
     shelfMessage.textContent = "Something went wrong. Try again.";
   }
@@ -633,14 +691,6 @@ function handleActionError(error: unknown): void {
 
 function handleLoadError(error: unknown): void {
   handleActionError(error);
-  if (
-    error instanceof Error &&
-    !error.message.includes("401") &&
-    !error.message.includes("500") &&
-    !error.message.includes("delete")
-  ) {
-    shelfMessage.textContent = "Could not load your games.";
-  }
 }
 
 async function handleSignOut(): Promise<void> {
@@ -653,11 +703,24 @@ cancelGameFormButton.addEventListener("click", closeGameForm);
 closeGameFormButton.addEventListener("click", closeGameForm);
 clearCoverButton.addEventListener("click", () => setCoverUrl(null));
 titleField.addEventListener("input", scheduleIgdbSearch);
-gameForm.addEventListener("submit", handleGameSubmit);
+gameForm.addEventListener("submit", (event) => {
+  void handleGameSubmit(event).catch(handleActionError);
+});
 cancelSessionFormButton.addEventListener("click", closeSessionForm);
 closeSessionFormButton.addEventListener("click", closeSessionForm);
-sessionForm.addEventListener("submit", handleSessionSubmit);
+sessionForm.addEventListener("submit", (event) => {
+  void handleSessionSubmit(event).catch(handleActionError);
+});
 signOutButton.addEventListener("click", handleSignOut);
+
+for (const control of [
+  statusFilterField,
+  archivedFilterField,
+  sortFilterField,
+]) {
+  control.addEventListener("change", applyFilterControls);
+}
+resetFiltersButton.addEventListener("click", resetFilters);
 
 // A click landing on the dialog itself, rather than the form filling it, is a
 // click on the backdrop.
@@ -682,6 +745,7 @@ sessionFormDialog.addEventListener("close", () => {
   loggingSessionGame = null;
 });
 
+syncFilterControls();
 loadGames().catch(handleLoadError);
 
 export {};

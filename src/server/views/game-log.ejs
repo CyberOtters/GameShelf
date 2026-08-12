@@ -14,7 +14,9 @@
   </div>
 
   <div class="log-actions">
+    <% if (game.status !== 'WISHLIST') { %>
     <button type="button" class="btn" id="open-session-form">Log Session</button>
+    <% } %>
     <button type="button" class="btn ghost" id="sign-out">Sign Out</button>
   </div>
 </section>
@@ -25,8 +27,10 @@
   <div class="ridges" aria-hidden="true">
     <span></span><span></span><span></span><span></span>
   </div>
-  <p class="log-summary-label">Total hours</p>
-  <p class="log-summary-value" id="total-hours">—</p>
+  <div class="log-summary-body">
+    <p class="log-summary-label">Total hours</p>
+    <p class="log-summary-value" id="total-hours">—</p>
+  </div>
 </section>
 
 <section class="session-log" id="session-log" hidden></section>

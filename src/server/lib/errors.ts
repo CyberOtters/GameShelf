@@ -25,6 +25,15 @@ export function notFound(message = "Not found") {
 }
 
 /**
+ * The request is well-formed but the rows it would produce break a business
+ * rule (see `gameRules.ts`) — a 409 rather than a 400, since nothing about the
+ * payload's shape is wrong.
+ */
+export function conflict(message: string, fields?: FieldErrors) {
+  return new HttpError(409, message, fields);
+}
+
+/**
  * Last handler in the stack: turns thrown errors into JSON the client can
  * display. Express 5 forwards rejected promises here on its own, so route
  * handlers can just throw.
